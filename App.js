@@ -1,19 +1,21 @@
 
-// Import NavigationContainer
 import { NavigationContainer } from "@react-navigation/native";
-
-// Import Stack Navigator
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
-// Import the two screens
+// Existing Splash Screen
 import SplashScreen from "./src/screens/SplashScreen/SplashScreen";
-import HomeScreen from "./src/screens/HomeScreen/HomeScreen";
 
-// Create the Stack Navigator
+// Bottom Navigation
+import BottomTabNavigator from "./src/navigation/BottomTabNavigator";
+
+
 const Stack = createNativeStackNavigator();
 
+
 export default function App() {
+
   return (
+
     <NavigationContainer>
 
       <Stack.Navigator
@@ -23,20 +25,22 @@ export default function App() {
         }}
       >
 
-        {/* First screen */}
+        {/* Splash Screen */}
         <Stack.Screen
           name="Splash"
           component={SplashScreen}
         />
 
-        {/* Second screen */}
+        {/* Main App */}
         <Stack.Screen
-          name="Home"
-          component={HomeScreen}
+          name="Main"
+          component={BottomTabNavigator}
         />
 
       </Stack.Navigator>
 
     </NavigationContainer>
+
   );
 }
+

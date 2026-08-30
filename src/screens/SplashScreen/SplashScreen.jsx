@@ -4,26 +4,28 @@ import { useEffect } from "react";
 
 import styles from "./SplashScreen.styles";
 
-export default function SplashScreen({ navigation }) 
-{
 
-  // Wait 3 seconds and then move to Home
+export default function SplashScreen({ navigation }) {
+
+  // Wait 3 seconds
   useEffect(() => {
 
     const timer = setTimeout(() => {
 
-      // Navigate to Home Screen
-      navigation.replace("Home");
+      // Go to the main application
+      navigation.replace("Main");
 
     }, 3000);
 
-    // Clear timer when screen closes
+
+    // Clear timer
     return () => clearTimeout(timer);
 
   }, [navigation]);
 
 
   return (
+
     <View style={styles.container}>
 
       {/* App logo */}
@@ -38,11 +40,12 @@ export default function SplashScreen({ navigation })
         MARKET
       </Text>
 
-      {/* App tagline */}
+      {/* Tagline */}
       <Text style={styles.tagline}>
         Understand the market.
       </Text>
 
     </View>
+
   );
 }
