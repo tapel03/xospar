@@ -1,85 +1,89 @@
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { Ionicons } from "@expo/vector-icons";
 
-// Screens
 import DashboardScreen from "../screens/DashboardScreen/DashboardScreen";
 import MarketsScreen from "../screens/MarketsScreen/MarketsScreen";
 import AlertsScreen from "../screens/AlertsScreen/AlertsScreen";
 import CalendarScreen from "../screens/CalendarScreen/CalendarScreen";
 import MoreScreen from "../screens/MoreScreen/MoreScreen";
 
-
 const Tab = createBottomTabNavigator();
 
-
 export default function BottomTabNavigator() {
-
   return (
-
     <Tab.Navigator
+      screenOptions={({ route }) => ({
+  headerShown: false,
 
-      screenOptions={{
+  // Bottom navigation
+  tabBarStyle: {
+    height: 70,
+    paddingBottom: 8,
+    paddingTop: 8,
+    backgroundColor: "#000000",
+    borderTopColor: "#000000",
+  },
 
-        // Hide the normal top header
-        headerShown: false,
+  // Selected tab
+  tabBarActiveTintColor: "#FFFFFF",
 
-        // Bottom navigation bar
-        tabBarStyle: {
-          height: 65,
-          paddingBottom: 8,
-          paddingTop: 8,
-        },
+  // Unselected tabs
+  tabBarInactiveTintColor: "#AAAAAA",
 
-        // Selected button
-        tabBarActiveTintColor: "#000000",
+  tabBarLabelStyle: {
+    fontSize: 11,
+    fontWeight: "500",
+  },
 
-        // Unselected buttons
-        tabBarInactiveTintColor: "#888888",
+  tabBarIcon: ({ focused, color }) => {
+    let iconName;
 
-        // Button text
-        tabBarLabelStyle: {
-          fontSize: 11,
-        },
+    if (route.name === "Dashboard") {
+      iconName = focused ? "home" : "home-outline";
+    } else if (route.name === "Markets") {
+      iconName = focused ? "bar-chart" : "bar-chart-outline";
+    } else if (route.name === "Alerts") {
+      iconName = focused ? "notifications" : "notifications-outline";
+    } else if (route.name === "Calendar") {
+      iconName = focused ? "calendar" : "calendar-outline";
+    } else if (route.name === "More") {
+      iconName = focused ? "menu" : "menu-outline";
+    }
 
-      }}
-
+    return (
+      <Ionicons
+        name={iconName}
+        size={18}
+        color={color}
+      />
+    );
+  },
+})}
     >
-
-      {/* DASHBOARD */}
       <Tab.Screen
         name="Dashboard"
         component={DashboardScreen}
       />
 
-
-      {/* MARKETS */}
       <Tab.Screen
         name="Markets"
         component={MarketsScreen}
       />
 
-
-      {/* ALERTS */}
       <Tab.Screen
         name="Alerts"
         component={AlertsScreen}
       />
 
-
-      {/* CALENDAR */}
       <Tab.Screen
         name="Calendar"
         component={CalendarScreen}
       />
 
-
-      {/* MORE */}
       <Tab.Screen
         name="More"
         component={MoreScreen}
       />
-
     </Tab.Navigator>
-
   );
 }
-

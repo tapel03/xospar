@@ -27,17 +27,19 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#ffffff",
+   backgroundColor: '#000000',
   },
 
   title: {
     fontSize: 30,
     fontWeight: "bold",
+     color: '#FFFFFF',
   },
 
   subtitle: {
     marginTop: 10,
     fontSize: 16,
+     color: '#FFFFFF',
   },
 
 });
