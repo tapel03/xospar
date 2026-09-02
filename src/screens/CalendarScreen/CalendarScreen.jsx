@@ -8,7 +8,7 @@ export default function AlertsScreen() {
     <View style={styles.container}>
 
       <Text style={styles.title}>
-        Alerts
+        Calendar
       </Text>
 
       <Text style={styles.subtitle}>
