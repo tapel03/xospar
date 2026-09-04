@@ -1,21 +1,18 @@
 
 import { View, Text, StyleSheet } from "react-native";
 
+import AlertHeader from '../AlertsScreen/AlertsComponent/AlertHeader';
+import FilterBar from './AlertsComponent/FilterBar';
+import AlertListItem from '../AlertsScreen/AlertsComponent/AlertListItem';
 
 export default function AlertsScreen() {
 
   return (
 
     <View style={styles.container}>
-
-      <Text style={styles.title}>
-        Alerts
-      </Text>
-
-      <Text style={styles.subtitle}>
-        Your market alerts
-      </Text>
-
+      <AlertHeader />
+      <FilterBar />
+      <AlertListItem />
     </View>
 
   );
@@ -29,13 +26,8 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: '#000000'
-  },
-
-  title: {
-    fontSize: 30,
-    fontWeight: "bold",
-    color: '#FFFFFF',
+    backgroundColor: '#000000',
+     borderColor: "#FFFFFF",
   },
 
   subtitle: {

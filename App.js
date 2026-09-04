@@ -1,7 +1,7 @@
 
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-
+import { StyleSheet } from "react-native";
 // Existing Splash Screen
 import SplashScreen from "./src/screens/SplashScreen/SplashScreen";
 
@@ -16,7 +16,8 @@ export default function App() {
 
   return (
 
-    <NavigationContainer>
+    
+    <NavigationContainer style={styles.container}>
 
       <Stack.Navigator
         initialRouteName="Splash"
@@ -44,3 +45,16 @@ export default function App() {
   );
 }
 
+
+
+const styles = StyleSheet.create({
+
+  container: 
+  {
+    width: 720,
+    height: 1600,
+    backgroundColor: "#101820",
+    borderWidth: 1,
+    borderColor: "#FFFFFF",
+  },
+});
