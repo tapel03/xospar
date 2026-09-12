@@ -1,73 +1,83 @@
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
 
-import DashboardScreen from "../screens/DashboardScreen/DashboardScreen";
-import MarketsScreen from "../screens/MarketsScreen/MarketsScreen";
+import HomeNavigator from "./HomeNavigator";
+import MarketsNavigator from "./MarketsNavigator";
 import AlertsScreen from "../screens/AlertsScreen/AlertsScreen";
-import CalendarScreen from "../screens/CalendarScreen/CalendarScreen";
-import MoreScreen from "../screens/MoreScreen/MoreScreen";
+import CalendarNavigator from "./CalendarNavigator";
+import MoreNavigator from "./MoreNavigator";
 
 const Tab = createBottomTabNavigator();
 
 export default function BottomTabNavigator() {
   return (
     <Tab.Navigator
+      initialRouteName="Home"
       screenOptions={({ route }) => ({
-  headerShown: false,
+        headerShown: false,
 
-  // Bottom navigation
-  tabBarStyle: {
-    height: 70,
-    paddingBottom: 8,
-    paddingTop: 8,
-    backgroundColor: "#000000",
-    borderTopColor: "#000000",
-  },
+        tabBarStyle: {
+          height: 70,
+          paddingBottom: 8,
+          paddingTop: 8,
+          backgroundColor: "#000000",
+          borderTopColor: "#000000",
+        },
 
-  // Selected tab
-  tabBarActiveTintColor: "#FFFFFF",
+        tabBarActiveTintColor: "#FFFFFF",
+        tabBarInactiveTintColor: "#AAAAAA",
 
-  // Unselected tabs
-  tabBarInactiveTintColor: "#AAAAAA",
+        tabBarIcon: ({ focused, color }) => {
+          let iconName;
 
-  tabBarLabelStyle: {
-    fontSize: 11,
-    fontWeight: "500",
-  },
+          if (route.name === "Home") {
+            iconName = focused
+              ? "home"
+              : "home-outline";
+          }
 
-  tabBarIcon: ({ focused, color }) => {
-    let iconName;
+          if (route.name === "Markets") {
+            iconName = focused
+              ? "bar-chart"
+              : "bar-chart-outline";
+          }
 
-    if (route.name === "Dashboard") {
-      iconName = focused ? "home" : "home-outline";
-    } else if (route.name === "Markets") {
-      iconName = focused ? "bar-chart" : "bar-chart-outline";
-    } else if (route.name === "Alerts") {
-      iconName = focused ? "notifications" : "notifications-outline";
-    } else if (route.name === "Calendar") {
-      iconName = focused ? "calendar" : "calendar-outline";
-    } else if (route.name === "More") {
-      iconName = focused ? "menu" : "menu-outline";
-    }
+          if (route.name === "Alerts") {
+            iconName = focused
+              ? "notifications"
+              : "notifications-outline";
+          }
 
-    return (
-      <Ionicons
-        name={iconName}
-        size={18}
-        color={color}
-      />
-    );
-  },
-})}
+          if (route.name === "Calendar") {
+            iconName = focused
+              ? "calendar"
+              : "calendar-outline";
+          }
+
+          if (route.name === "More") {
+            iconName = focused
+              ? "menu"
+              : "menu-outline";
+          }
+
+          return (
+            <Ionicons
+              name={iconName}
+              size={18}
+              color={color}
+            />
+          );
+        },
+      })}
     >
       <Tab.Screen
-        name="Dashboard"
-        component={DashboardScreen}
+        name="Home"
+        component={HomeNavigator}
       />
 
       <Tab.Screen
         name="Markets"
-        component={MarketsScreen}
+        component={MarketsNavigator}
       />
 
       <Tab.Screen
@@ -77,12 +87,12 @@ export default function BottomTabNavigator() {
 
       <Tab.Screen
         name="Calendar"
-        component={CalendarScreen}
+        component={CalendarNavigator}
       />
 
       <Tab.Screen
         name="More"
-        component={MoreScreen}
+        component={MoreNavigator}
       />
     </Tab.Navigator>
   );

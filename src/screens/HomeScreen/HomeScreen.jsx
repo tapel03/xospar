@@ -1,49 +1,36 @@
+import { ScrollView, StyleSheet, View } from "react-native";
 
-import { View, Text, StyleSheet } from "react-native";
-
+import TopStoriesCard from "./HomeComponets/TopStoriesCard";
+import MarketSentimentOverview from "./HomeComponets/MarketSentimentOverview";
+import RecentMarketImpact from "./HomeComponets/RecentMarketImpact";
 
 export default function HomeScreen() {
-
   return (
-
     <View style={styles.container}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.content}
+      >
+        <TopStoriesCard />
 
-      <Text style={styles.title}>
-        MARKET
-      </Text>
+        <MarketSentimentOverview />
 
-      <Text style={styles.subtitle}>
-        Welcome to the Market App
-      </Text>
-
+        <RecentMarketImpact />
+      </ScrollView>
     </View>
-
   );
 }
 
-
 const styles = StyleSheet.create({
-
   container: {
     flex: 1,
-
-    justifyContent: "center",
-
-    alignItems: "center",
-
-    backgroundColor: '#000000',
+    backgroundColor: "#000000",
   },
 
-  title: {
-    fontSize: 32,
- color: '#FFFFFF',
-    fontWeight: "bold",
+  content: {
+    paddingHorizontal: 12,
+    paddingTop: 12,
+    paddingBottom: 30,
+    gap: 14,
   },
-
-  subtitle: {
-    fontSize: 16,
-
-    marginTop: 10,
-  },
-
 });

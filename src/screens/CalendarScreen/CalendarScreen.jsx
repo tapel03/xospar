@@ -1,20 +1,22 @@
 import { View, StyleSheet } from "react-native";
-import DateSelector from './CalendarComponent/DateSelector';
-import EventList from './CalendarComponent/EventList';
 
-export default function AlertsScreen() {
+import CalendarHeader from "./CalendarComponent/CalendarHeader";
+import DateSelector from "./CalendarComponent/DateSelector";
+import EventList from "./CalendarComponent/EventList";
 
+export default function CalendarScreen() {
   return (
-
-    <View>
-
+    <View style={styles.container}>
+      <CalendarHeader />
       <DateSelector />
       <EventList />
-
     </View>
-
   );
-
 }
 
-
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#101820",
+  },
+});

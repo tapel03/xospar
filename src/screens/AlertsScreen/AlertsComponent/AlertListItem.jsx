@@ -1,20 +1,22 @@
-import { View, StyleSheet,flatlist } from "react-native";
+import { View, FlatList, StyleSheet } from "react-native";
 
 export default function AlertListItem() {
   return (
-    <flatlist style={styles.AlertListItem_container}>
-    </flatlist>
+    <View style={styles.container}>
+
+      <FlatList
+        data={[]}
+        renderItem={null}
+      />
+
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  AlertListItem_container: {
-  flex: 1,
-  justifyContent: "center",
-  alignItems: "center",
-  backgroundColor: "#101820",
-  borderWidth: 10,
-  borderColor: "#FFFFFF",
-   width: "100%",
-},
+  container: {
+    flex: 1,
+    width: "100%",
+    backgroundColor: "#101820",
+  },
 });
