@@ -7,9 +7,13 @@ import {
 
 import { Ionicons } from "@expo/vector-icons";
 
+import BookmarkButton from "./BookmarkButton";
+
 export default function MarketRow({
   asset,
   onPress,
+  bookmarked = false,
+  onToggleBookmark,
 }) {
   return (
     <Pressable
@@ -20,6 +24,12 @@ export default function MarketRow({
       onPress={onPress}
     >
       <View style={styles.left}>
+
+        <BookmarkButton
+          bookmarked={bookmarked}
+          onPress={onToggleBookmark}
+        />
+
         <View style={styles.icon}>
           <Text style={styles.iconText}>
             {asset.icon}
@@ -31,13 +41,17 @@ export default function MarketRow({
             {asset.symbol}
           </Text>
 
-          <Text style={styles.pair}>
-            {asset.pair}
-          </Text>
+          {!!asset.pair && (
+            <Text style={styles.pair}>
+              {asset.pair}
+            </Text>
+          )}
 
-          <Text style={styles.allocation}>
-            {asset.allocation}
-          </Text>
+          {!!asset.allocation && (
+            <Text style={styles.allocation}>
+              {asset.allocation}
+            </Text>
+          )}
         </View>
       </View>
 

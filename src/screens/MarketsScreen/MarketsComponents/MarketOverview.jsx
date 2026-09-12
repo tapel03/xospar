@@ -209,8 +209,8 @@ const styles = StyleSheet.create({
   },
 
   gridBlock: {
-    width: "2.9%",
-    height: 7,
+    width: "4%",
+    height: 20,
     marginRight: "0.4%",
     marginBottom: 3,
     backgroundColor: "#35404B",

@@ -5,35 +5,28 @@ import {
   TouchableOpacity,
   StyleSheet,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 
 export default function FilterBar() {
   return (
     <View style={styles.container}>
-      
 
       {/* =========================
           TOP ROW
       ========================== */}
       <View style={styles.topRow}>
 
-        {/* Search Box */}
         <View style={styles.searchBox}>
-
-          {/* Search Icon */}
-          <Text style={styles.searchIcon}>⌕</Text>
-
-          {/* Input */}
+          <Ionicons name="search" size={17} color="#8a8f98" />
           <TextInput
             placeholder="Search alerts..."
             placeholderTextColor="#8a8f98"
             style={styles.input}
           />
-
         </View>
 
-        {/* Filter Button */}
         <TouchableOpacity style={styles.filterButton}>
-          <Text style={styles.filterIcon}>▽</Text>
+          <Ionicons name="options-outline" size={18} color="#b5bbc4" />
         </TouchableOpacity>
 
       </View>
@@ -44,33 +37,19 @@ export default function FilterBar() {
       ========================== */}
       <View style={styles.filtersRow}>
 
-        {/* Severity */}
         <TouchableOpacity style={styles.dropdown}>
-          <Text style={styles.dropdownText}>
-            All Severities
-          </Text>
-
-          <Text style={styles.arrow}>⌄</Text>
+          <Text style={styles.dropdownText}>All Severities</Text>
+          <Ionicons name="chevron-down" size={14} color="#9da4ae" />
         </TouchableOpacity>
 
-
-        {/* Status */}
         <TouchableOpacity style={styles.dropdown}>
-          <Text style={styles.dropdownText}>
-            All Statuses
-          </Text>
-
-          <Text style={styles.arrow}>⌄</Text>
+          <Text style={styles.dropdownText}>All Statuses</Text>
+          <Ionicons name="chevron-down" size={14} color="#9da4ae" />
         </TouchableOpacity>
 
-
-        {/* Date */}
         <TouchableOpacity style={styles.dropdown}>
-          <Text style={styles.dropdownText}>
-            This Month
-          </Text>
-
-          <Text style={styles.arrow}>⌄</Text>
+          <Text style={styles.dropdownText}>This Month</Text>
+          <Ionicons name="chevron-down" size={14} color="#9da4ae" />
         </TouchableOpacity>
 
       </View>
@@ -79,33 +58,11 @@ export default function FilterBar() {
   );
 }
 
-
 const styles = StyleSheet.create({
-
-  /* =========================
-     MAIN CONTAINER
-  ========================== */
-
   container: {
-    backgroundColor: "#080d14",
-
-    // IMPORTANT:
-    // Do NOT use flex: 1 here.
-    // This allows the container to wrap its content.
-    paddingVertical: 12,
-    paddingHorizontal: 6,
-
-    borderWidth: 3,
-    borderColor: "#1b2735",
-
-    borderRadius: 0,
-     width: "100%",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
   },
-
-
-  /* =========================
-     TOP ROW
-  ========================== */
 
   topRow: {
     flexDirection: "row",
@@ -113,119 +70,58 @@ const styles = StyleSheet.create({
     gap: 8,
   },
 
-
-  /* =========================
-     SEARCH BOX
-  ========================== */
-
   searchBox: {
     flex: 1,
-
-    height: 44,
-
+    height: 42,
     flexDirection: "row",
     alignItems: "center",
-
-    backgroundColor: "#0b1119",
-
-    borderWidth: 3,
-    borderColor: "#1b2735",
-    borderRadius: 9,
-
+    backgroundColor: "#101820",
+    borderWidth: 1,
+    borderColor: "#1C2630",
+    borderRadius: 10,
     paddingHorizontal: 12,
+    gap: 8,
   },
-
-
-  searchIcon: {
-    fontSize: 25,
-    color: "#b5bbc4",
-    marginRight: 8,
-  },
-
 
   input: {
     flex: 1,
-
     color: "#ffffff",
     fontSize: 14,
   },
 
-
-  /* =========================
-     FILTER BUTTON
-  ========================== */
-
   filterButton: {
-    width: 44,
-    height: 44,
-
+    width: 42,
+    height: 42,
     alignItems: "center",
     justifyContent: "center",
-
-    backgroundColor: "#0b1119",
-
-    borderWidth: 3,
-    borderColor: "#1b2735",
-    borderRadius: 9,
+    backgroundColor: "#101820",
+    borderWidth: 1,
+    borderColor: "#1C2630",
+    borderRadius: 10,
   },
-
-
-  filterIcon: {
-    color: "#b5bbc4",
-    fontSize: 22,
-  },
-
-
-  /* =========================
-     BOTTOM FILTERS
-  ========================== */
 
   filtersRow: {
     flexDirection: "row",
-
     marginTop: 10,
-
     gap: 8,
   },
 
-
-  /* =========================
-     DROPDOWN
-  ========================== */
-
   dropdown: {
-    height: 40,
-
+    height: 36,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-
-    backgroundColor: "#0b1119",
-
-    borderWidth: 3,
-    borderColor: "#1b2735",
+    backgroundColor: "#101820",
+    borderWidth: 1,
+    borderColor: "#1C2630",
     borderRadius: 8,
-
-    paddingHorizontal: 11,
-
+    paddingHorizontal: 10,
     flex: 1,
   },
 
-
   dropdownText: {
     color: "#d5d9df",
-
     fontSize: 12,
     fontWeight: "500",
   },
-
-
-  arrow: {
-    color: "#9da4ae",
-
-    fontSize: 18,
-
-    marginLeft: 5,
-  },
-
 });

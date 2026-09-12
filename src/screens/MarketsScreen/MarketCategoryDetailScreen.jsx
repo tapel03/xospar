@@ -9,6 +9,9 @@ import {
 
 import { Ionicons } from "@expo/vector-icons";
 
+import BookmarkButton from "./MarketsComponents/BookmarkButton";
+import { useWatchlist } from "../../context/WatchlistContext";
+
 const CATEGORY_PAIRS = {
   Crypto: [
     {
@@ -147,6 +150,10 @@ export default function MarketCategoryDetailScreen({ navigation, route }) {
 
   const pairs = CATEGORY_PAIRS[category] || [];
 
+  // Bookmarking any currency, pair, index, or stock here syncs it straight
+  // into the Watch List on the Markets home screen.
+  const { isBookmarked, toggleBookmark } = useWatchlist();
+
   return (
     <View style={styles.container}>
 
@@ -187,66 +194,85 @@ export default function MarketCategoryDetailScreen({ navigation, route }) {
           Trading Pairs
         </Text>
 
-        {pairs.map((pair) => (
-          <Pressable
-            key={pair.symbol}
-            style={({ pressed }) => [
-              styles.pairRow,
-              pressed && styles.pairPressed,
-            ]}
-          >
+        {pairs.map((pair) => {
+          // Shared shape so this asset renders correctly in the Watch List,
+          // no matter which category (currency, pair, index, stock) it came from.
+          const watchlistAsset = {
+            symbol: pair.symbol,
+            name: pair.name,
+            pair: pair.name,
+            price: pair.price,
+            change: pair.change,
+            positive: pair.positive,
+            icon: pair.symbol.charAt(0),
+          };
 
-            <View style={styles.pairLeft}>
+          return (
+            <Pressable
+              key={pair.symbol}
+              style={({ pressed }) => [
+                styles.pairRow,
+                pressed && styles.pairPressed,
+              ]}
+            >
 
-              <View style={styles.icon}>
-                <Text style={styles.iconText}>
-                  {pair.symbol.charAt(0)}
-                </Text>
+              <View style={styles.pairLeft}>
+
+                <BookmarkButton
+                  bookmarked={isBookmarked(pair.symbol)}
+                  onPress={() => toggleBookmark(watchlistAsset)}
+                />
+
+                <View style={styles.icon}>
+                  <Text style={styles.iconText}>
+                    {pair.symbol.charAt(0)}
+                  </Text>
+                </View>
+
+                <View>
+                  <Text style={styles.symbol}>
+                    {pair.symbol}
+                  </Text>
+
+                  <Text style={styles.name}>
+                    {pair.name}
+                  </Text>
+                </View>
+
               </View>
 
-              <View>
-                <Text style={styles.symbol}>
-                  {pair.symbol}
+
+              <View style={styles.pairRight}>
+
+                <Text style={styles.price}>
+                  {pair.price}
                 </Text>
 
-                <Text style={styles.name}>
-                  {pair.name}
+                <Text
+                  style={[
+                    styles.change,
+                    {
+                      color: pair.positive
+                        ? "#39E6C0"
+                        : "#FF4D67",
+                    },
+                  ]}
+                >
+                  {pair.positive ? "↑ " : "↓ "}
+                  {pair.change}
                 </Text>
+
               </View>
 
-            </View>
+              <Ionicons
+                name="chevron-forward"
+                size={17}
+                color="#59636D"
+              />
 
-
-            <View style={styles.pairRight}>
-
-              <Text style={styles.price}>
-                {pair.price}
-              </Text>
-
-              <Text
-                style={[
-                  styles.change,
-                  {
-                    color: pair.positive
-                      ? "#39E6C0"
-                      : "#FF4D67",
-                  },
-                ]}
-              >
-                {pair.positive ? "↑ " : "↓ "}
-                {pair.change}
-              </Text>
-
-            </View>
-
-            <Ionicons
-              name="chevron-forward"
-              size={17}
-              color="#59636D"
-            />
-
-          </Pressable>
-        ))}
+            </Pressable>
+          );
+        })}
 
       </ScrollView>
 

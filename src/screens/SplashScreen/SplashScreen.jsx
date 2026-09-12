@@ -28,8 +28,8 @@ export default function SplashScreen({ navigation }) {
     const timer = setTimeout(() => {
 
       if (isLastFace) {
-        // Fully loaded - go to the login screen
-        navigation.replace("Login");
+        // Fully loaded - enter the app and remove the splash screen
+        navigation.replace("Main");
       } else {
         // Move on to the next face in the sequence
         setFaceIndex((prev) => prev + 1);

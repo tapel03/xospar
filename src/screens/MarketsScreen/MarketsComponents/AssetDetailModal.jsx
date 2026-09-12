@@ -9,10 +9,14 @@ import {
 
 import { Ionicons } from "@expo/vector-icons";
 
+import MarketInfoTabs from "./MarketInfoTabs";
+
 export default function AssetDetailModal({
   asset,
   visible,
   onClose,
+  bookmarked = false,
+  onToggleBookmark,
 }) {
   // If there is no selected asset, don't display asset information.
   if (!asset) {
@@ -60,11 +64,16 @@ export default function AssetDetailModal({
 
             <View style={styles.headerButtons}>
 
-              <Pressable style={styles.iconButton}>
+              {/* Bookmark toggle - stays in sync with the Watch List
+                  no matter which asset or category this modal opened from. */}
+              <Pressable
+                style={styles.iconButton}
+                onPress={onToggleBookmark}
+              >
                 <Ionicons
-                  name="star-outline"
+                  name={bookmarked ? "bookmark" : "bookmark-outline"}
                   size={27}
-                  color="#FFFFFF"
+                  color={bookmarked ? "#F2C94C" : "#FFFFFF"}
                 />
               </Pressable>
 
@@ -121,54 +130,10 @@ export default function AssetDetailModal({
 
             {/* =========================
                 MARKET INFORMATION
+                Sliding/peel tab navigation: Market Information,
+                History, Notes, Info, AI Assistant.
             ========================== */}
-            <View style={styles.infoCard}>
-
-              <Text style={styles.infoTitle}>
-                Market Information
-              </Text>
-
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>
-                  Asset
-                </Text>
-
-                <Text style={styles.infoValue}>
-                  {asset.name}
-                </Text>
-              </View>
-
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>
-                  Pair
-                </Text>
-
-                <Text style={styles.infoValue}>
-                  {asset.pair}
-                </Text>
-              </View>
-
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>
-                  Allocation
-                </Text>
-
-                <Text style={styles.infoValue}>
-                  {asset.allocation}
-                </Text>
-              </View>
-
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>
-                  Market
-                </Text>
-
-                <Text style={styles.infoValue}>
-                  Crypto
-                </Text>
-              </View>
-
-            </View>
+            <MarketInfoTabs asset={asset} />
 
           </ScrollView>
 
@@ -187,7 +152,7 @@ const styles = StyleSheet.create({
   },
 
   modal: {
-    height: "85%",
+    height: "95%",
     backgroundColor: "#080D12",
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
@@ -271,7 +236,7 @@ const styles = StyleSheet.create({
   },
 
   chartContainer: {
-    height: 230,
+    height: 510,
     backgroundColor: "#0D151D",
     borderWidth: 1,
     borderColor: "#28333F",
@@ -302,43 +267,4 @@ const styles = StyleSheet.create({
     color: "#59636D",
     fontSize: 14,
   },
-
-  infoCard: {
-    backgroundColor: "#0D151D",
-    borderWidth: 1,
-    borderColor: "#28333F",
-    borderRadius: 14,
-    paddingHorizontal: 20,
-    marginBottom: 22,
-  },
-
-  infoTitle: {
-    color: "#FFFFFF",
-    fontSize: 20,
-    fontWeight: "700",
-    paddingVertical: 18,
-    borderBottomWidth: 1,
-    borderBottomColor: "#1C252C",
-  },
-
-  infoRow: {
-    minHeight: 56,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    borderBottomWidth: 1,
-    borderBottomColor: "#1C252C",
-  },
-
-  infoLabel: {
-    color: "#858E97",
-    fontSize: 14,
-  },
-
-  infoValue: {
-    color: "#FFFFFF",
-    fontSize: 14,
-    fontWeight: "700",
-  },
 });
-

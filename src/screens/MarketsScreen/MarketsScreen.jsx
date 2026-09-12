@@ -12,45 +12,15 @@ import MarketOverview from "./MarketsComponents/MarketOverview.jsx";
 import MarketRow from "./MarketsComponents/MarketRow.jsx";
 import LongShortRatio from "./MarketsComponents/LongShortRatio.jsx";
 import AssetDetailModal from "./MarketsComponents/AssetDetailModal.jsx";
-
-const ASSETS = [
-  {
-    symbol: "USDT",
-    name: "Tether",
-    pair: "USDT / USD",
-    price: "1.000",
-    value: "125.322",
-    allocation: "1.5%",
-    change: "-0.3%",
-    positive: false,
-    icon: "₮",
-  },
-  {
-    symbol: "ETH",
-    name: "Ethereum",
-    pair: "ETH / USD",
-    price: "2,568.20",
-    value: "112.325",
-    allocation: "2.8%",
-    change: "-5.2%",
-    positive: false,
-    icon: "Ξ",
-  },
-  {
-    symbol: "UNI",
-    name: "Uniswap",
-    pair: "UNI / USD",
-    price: "5,234.68",
-    value: "—",
-    allocation: "10%",
-    change: "+8.4%",
-    positive: true,
-    icon: "U",
-  },
-];
+import { useWatchlist } from "../../context/WatchlistContext";
 
 export default function MarketsScreen() {
   const [selectedAsset, setSelectedAsset] = useState(null);
+
+  // watchlistAssets is shared across the whole Markets stack, so anything
+  // bookmarked from a category detail screen (Crypto/Forex/Indices/Stocks)
+  // shows up here automatically.
+  const { watchlistAssets, isBookmarked, toggleBookmark } = useWatchlist();
 
   return (
     <View style={styles.container}>
@@ -66,14 +36,23 @@ export default function MarketsScreen() {
 
         <View style={styles.assetsHeader}>
           <Text style={styles.assetsTitle}>
-            Assets
+            Watch List
           </Text>
         </View>
 
-        {ASSETS.map((asset) => (
+        {watchlistAssets.length === 0 && (
+          <Text style={styles.emptyText}>
+            No assets in your watch list yet. Tap the bookmark icon on any
+            asset to add it here.
+          </Text>
+        )}
+
+        {watchlistAssets.map((asset) => (
           <MarketRow
             key={asset.symbol}
             asset={asset}
+            bookmarked={isBookmarked(asset.symbol)}
+            onToggleBookmark={() => toggleBookmark(asset)}
             onPress={() => setSelectedAsset(asset)}
           />
         ))}
@@ -86,6 +65,10 @@ export default function MarketsScreen() {
         asset={selectedAsset}
         visible={selectedAsset !== null}
         onClose={() => setSelectedAsset(null)}
+        bookmarked={selectedAsset ? isBookmarked(selectedAsset.symbol) : false}
+        onToggleBookmark={() =>
+          selectedAsset && toggleBookmark(selectedAsset)
+        }
       />
 
     </View>
@@ -112,6 +95,14 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 20,
     fontWeight: "700",
+  },
+
+  emptyText: {
+    color: "#8B949E",
+    fontSize: 13,
+    lineHeight: 19,
+    paddingHorizontal: 16,
+    paddingVertical: 20,
   },
 });
 
