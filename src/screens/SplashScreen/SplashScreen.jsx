@@ -4,43 +4,31 @@ import { useEffect, useState } from "react";
 
 import styles from "./SplashScreen.styles";
 
-// Splash face sequence, shown in order.
-// The last face is the "fully loaded" state, shown right before
-// entering the app and clearing the splash screen away.
+// Splash face sequence, cycled continuously for as long as this screen
+// is mounted. Navigation is no longer driven from here - RootNavigator
+// renders this directly while AuthContext checks for a saved session,
+// then swaps it out for Auth / Onboarding / Main once that resolves.
 const FACES = [
   require("../../../assets/splash-face-1.jpeg"), // eyes open
   require("../../../assets/splash-face-2.jpeg"), // eyes closed / resting
-  require("../../../assets/splash-face-3.jpeg"), // wink - fully loaded, entering app
+  require("../../../assets/splash-face-3.jpeg"), // wink
 ];
 
-// How long each face stays on screen before switching to the next one (ms)
 const FACE_DURATION = 800;
 
-
-export default function SplashScreen({ navigation }) {
+export default function SplashScreen() {
 
   const [faceIndex, setFaceIndex] = useState(0);
 
   useEffect(() => {
 
-    const isLastFace = faceIndex === FACES.length - 1;
-
-    const timer = setTimeout(() => {
-
-      if (isLastFace) {
-        // Fully loaded - enter the app and remove the splash screen
-        navigation.replace("Main");
-      } else {
-        // Move on to the next face in the sequence
-        setFaceIndex((prev) => prev + 1);
-      }
-
+    const timer = setInterval(() => {
+      setFaceIndex((prev) => (prev + 1) % FACES.length);
     }, FACE_DURATION);
 
-    // Clear timer
-    return () => clearTimeout(timer);
+    return () => clearInterval(timer);
 
-  }, [faceIndex, navigation]);
+  }, []);
 
 
   return (

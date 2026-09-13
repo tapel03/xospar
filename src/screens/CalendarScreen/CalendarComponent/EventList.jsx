@@ -8,6 +8,22 @@ import { useNavigation } from "@react-navigation/native";
 
 import EconomicEvent from "./EconomicEvent";
 
+const WEEKDAYS = [
+  "SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY",
+  "THURSDAY", "FRIDAY", "SATURDAY",
+];
+
+const MONTHS = [
+  "JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE",
+  "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER",
+];
+
+function formatHeader(date) {
+  return `${WEEKDAYS[date.getDay()]}, ${MONTHS[date.getMonth()]} ${date.getDate()}`;
+}
+
+// Placeholder events - same list regardless of the day selected for now.
+// Swap this out for real per-date data later.
 const EVENTS = [
   {
     id: "1",
@@ -47,14 +63,14 @@ const EVENTS = [
   },
 ];
 
-export default function EventList() {
+export default function EventList({ selectedDate }) {
   const navigation = useNavigation();
 
   return (
     <View style={styles.container}>
 
       <Text style={styles.sectionTitle}>
-        WEDNESDAY, MAY 15
+        {formatHeader(selectedDate)}
       </Text>
 
       <ScrollView

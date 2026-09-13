@@ -1,7 +1,11 @@
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, Pressable, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
+import { useAuth } from "../../../../context/AuthContext";
+
 export default function Profile() {
+  const { logout } = useAuth();
+
   return (
     <View style={styles.container}>
       <View style={styles.avatar}>
@@ -11,6 +15,13 @@ export default function Profile() {
       <Text style={styles.subtitle}>
         Manage your account details and trading info.
       </Text>
+
+      {/* Signing out drops isAuthenticated back to false, and
+          RootNavigator returns to the Auth flow automatically. */}
+      <Pressable style={styles.logoutButton} onPress={logout}>
+        <Ionicons name="log-out-outline" size={18} color="#FF5A5F" />
+        <Text style={styles.logoutText}>Log Out</Text>
+      </Pressable>
     </View>
   );
 }
@@ -45,5 +56,24 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginTop: 6,
     textAlign: "center",
+  },
+
+  logoutButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginTop: 36,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#2A1417",
+    backgroundColor: "#1C1013",
+  },
+
+  logoutText: {
+    color: "#FF5A5F",
+    fontSize: 15,
+    fontWeight: "700",
   },
 });

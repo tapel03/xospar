@@ -10,7 +10,6 @@ import {
 import MarketHeader from "./MarketsComponents/MarketHeader.jsx";
 import MarketOverview from "./MarketsComponents/MarketOverview.jsx";
 import MarketRow from "./MarketsComponents/MarketRow.jsx";
-import LongShortRatio from "./MarketsComponents/LongShortRatio.jsx";
 import AssetDetailModal from "./MarketsComponents/AssetDetailModal.jsx";
 import { useWatchlist } from "../../context/WatchlistContext";
 
@@ -56,8 +55,6 @@ export default function MarketsScreen() {
             onPress={() => setSelectedAsset(asset)}
           />
         ))}
-
-        <LongShortRatio />
 
       </ScrollView>
 
@@ -105,4 +102,3 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
   },
 });
-

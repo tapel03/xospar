@@ -9,64 +9,25 @@ import {
 
 import ChatHeader from "./AIChatComponents/ChatHeader";
 import MessageBubble from "./AIChatComponents/MessageBubble";
-import CategoryCardRow from "./AIChatComponents/CategoryCardRow";
 import ChatInputBar from "./AIChatComponents/ChatInputBar";
 
-const INITIAL_MESSAGES = [
-  {
-    id: "1",
-    role: "user",
-    text: "Give me a forecast for the SUI coin",
-    time: "15:01",
-  },
-  {
-    id: "2",
-    role: "assistant",
-    text:
-      "Sui's (SUI) is currently trading at $7.55, with a 24h change of +2.8%. Based on recent trends and volume inflows, short-term momentum appears bullish.",
-    time: "15:01",
-  },
-  {
-    id: "3",
-    role: "user",
-    text: "Thanks! Can you recomend which coin I should buy?",
-    time: "15:05",
-  },
-  {
-    id: "4",
-    role: "assistant",
-    text:
-      "Certainly! Here are the crypto categories currently showing the strongest momentum and growth potential:",
-    time: "15:05",
-    showCategories: true,
-  },
-];
+import { useAIChat } from "../../../../hooks/useAIChat";
 
+function formatTime(timestamp) {
+  const date = new Date(timestamp);
+  return `${date.getHours()}:${String(date.getMinutes()).padStart(2, "0")}`;
+}
+
+// NOTE: this screen isn't currently wired into any navigator (there's no
+// "AIChat" route registered) - it's kept here in case you want to reuse
+// this alternate chat layout somewhere. Wired up for real API calls the
+// same way as the other chat screens; the previous hardcoded demo
+// conversation (SUI forecast + category cards) has been removed since
+// it doesn't apply once real responses come from the model.
 export default function AIChatScreen() {
-  const [messages, setMessages] = useState(INITIAL_MESSAGES);
-
-  const handleSend = (text) => {
-    const now = new Date();
-    const time = `${now.getHours()}:${String(now.getMinutes()).padStart(2, "0")}`;
-
-    setMessages((prev) => [
-      ...prev,
-      { id: String(prev.length + 1), role: "user", text, time },
-    ]);
-
-    // Placeholder response — wire this up to a real AI backend when ready.
-    setTimeout(() => {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: String(prev.length + 1),
-          role: "assistant",
-          text: "I'm not connected to a live model yet, but I'll be able to answer that soon.",
-          time,
-        },
-      ]);
-    }, 500);
-  };
+  const { messages, sendMessage, isSending } = useAIChat({
+    initialMessage: "Hi! Ask me about markets, forex, stocks, commodities or crypto.",
+  });
 
   return (
     <KeyboardAvoidingView
@@ -81,18 +42,20 @@ export default function AIChatScreen() {
         showsVerticalScrollIndicator={false}
       >
         {messages.map((message) => (
-          <View key={message.id}>
-            <MessageBubble
-              role={message.role}
-              text={message.text}
-              time={message.time}
-            />
-            {message.showCategories && <CategoryCardRow />}
-          </View>
+          <MessageBubble
+            key={message.id}
+            role={message.role}
+            text={message.text}
+            time={formatTime(message.createdAt)}
+          />
         ))}
+
+        {isSending && (
+          <MessageBubble role="assistant" text="Thinking..." time="" />
+        )}
       </ScrollView>
 
-      <ChatInputBar onSend={handleSend} />
+      <ChatInputBar onSend={sendMessage} />
     </KeyboardAvoidingView>
   );
 }

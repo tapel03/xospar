@@ -4,11 +4,16 @@ import {
   useMemo,
   useState,
   useCallback,
+  useEffect,
 } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
+const WATCHLIST_STORAGE_KEY = "@market_app/watchlist";
 
 // These are the assets that used to be hard-coded on the Markets screen.
 // They now seed the Watch List so the default view looks unchanged,
-// but they can be un-bookmarked just like anything else.
+// but they can be un-bookmarked just like anything else. `category` is
+// set so the asset detail modal's chart knows which API to use for these.
 const DEFAULT_WATCHLIST_ASSETS = [
   {
     symbol: "USDT",
@@ -19,6 +24,7 @@ const DEFAULT_WATCHLIST_ASSETS = [
     change: "-0.3%",
     positive: false,
     icon: "₮",
+    category: "Crypto",
   },
   {
     symbol: "ETH",
@@ -29,6 +35,7 @@ const DEFAULT_WATCHLIST_ASSETS = [
     change: "-5.2%",
     positive: false,
     icon: "Ξ",
+    category: "Crypto",
   },
   {
     symbol: "UNI",
@@ -39,6 +46,7 @@ const DEFAULT_WATCHLIST_ASSETS = [
     change: "+8.4%",
     positive: true,
     icon: "U",
+    category: "Crypto",
   },
 ];
 
@@ -57,7 +65,48 @@ function buildInitialWatchlist() {
 export function WatchlistProvider({ children }) {
   // Keyed by symbol so any asset - crypto, forex pair, index, or stock -
   // can be bookmarked from anywhere in the app and it will sync here.
-  const [watchlist, setWatchlist] = useState(buildInitialWatchlist);
+  const [watchlist, setWatchlist] = useState(buildInitialWatchlist());
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Load watchlist from AsyncStorage on mount
+  useEffect(() => {
+    const loadWatchlist = async () => {
+      try {
+        const stored = await AsyncStorage.getItem(WATCHLIST_STORAGE_KEY);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          setWatchlist(parsed);
+        }
+      } catch (error) {
+        console.warn("Failed to load watchlist from storage:", error);
+        // Fall back to default if storage fails
+        setWatchlist(buildInitialWatchlist());
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadWatchlist();
+  }, []);
+
+  // Persist watchlist to AsyncStorage whenever it changes
+  useEffect(() => {
+    const persistWatchlist = async () => {
+      try {
+        await AsyncStorage.setItem(
+          WATCHLIST_STORAGE_KEY,
+          JSON.stringify(watchlist)
+        );
+      } catch (error) {
+        console.warn("Failed to persist watchlist to storage:", error);
+      }
+    };
+
+    // Only persist if we've finished loading
+    if (!isLoading) {
+      persistWatchlist();
+    }
+  }, [watchlist, isLoading]);
 
   const isBookmarked = useCallback(
     (symbol) => Boolean(watchlist[symbol]),
@@ -88,8 +137,8 @@ export function WatchlistProvider({ children }) {
   );
 
   const value = useMemo(
-    () => ({ watchlistAssets, isBookmarked, toggleBookmark }),
-    [watchlistAssets, isBookmarked, toggleBookmark]
+    () => ({ watchlistAssets, isBookmarked, toggleBookmark, isLoading }),
+    [watchlistAssets, isBookmarked, toggleBookmark, isLoading]
   );
 
   return (

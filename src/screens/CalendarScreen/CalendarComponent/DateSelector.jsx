@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -8,46 +8,67 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
-const DAYS = [
-  {
-    id: "mon",
-    day: "Mon",
-    date: "13",
-  },
-  {
-    id: "tue",
-    day: "Tue",
-    date: "14",
-  },
-  {
-    id: "wed",
-    day: "Wed",
-    date: "15",
-  },
-  {
-    id: "thu",
-    day: "Thu",
-    date: "16",
-  },
-  {
-    id: "fri",
-    day: "Fri",
-    date: "17",
-  },
+import MonthCalendarModal from "./MonthCalendarModal";
+
+const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const MONTHS_SHORT = [
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
 ];
 
-export default function DateSelector() {
-  const [selectedDay, setSelectedDay] = useState("wed");
+function isSameDate(a, b) {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
+}
+
+// Returns the Monday-Sunday week that contains `date`.
+function getWeekDates(date) {
+  const day = date.getDay(); // 0=Sun..6=Sat
+  const diffToMonday = day === 0 ? -6 : 1 - day;
+
+  const monday = new Date(date);
+  monday.setDate(date.getDate() + diffToMonday);
+
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    return d;
+  });
+}
+
+function formatRange(weekDates) {
+  const start = weekDates[0];
+  const end = weekDates[6];
+
+  const startLabel = `${MONTHS_SHORT[start.getMonth()]} ${start.getDate()}`;
+  const endLabel =
+    start.getMonth() === end.getMonth()
+      ? `${end.getDate()}`
+      : `${MONTHS_SHORT[end.getMonth()]} ${end.getDate()}`;
+
+  return `${startLabel} - ${endLabel}, ${end.getFullYear()}`;
+}
+
+export default function DateSelector({ selectedDate, onSelectDate }) {
+  const [calendarVisible, setCalendarVisible] = useState(false);
+
+  const weekDates = useMemo(() => getWeekDates(selectedDate), [selectedDate]);
 
   return (
     <View style={styles.container}>
 
       <View style={styles.rangeRow}>
         <Text style={styles.rangeText}>
-          May 13 - 17, 2024
+          {formatRange(weekDates)}
         </Text>
 
-        <Pressable style={styles.calendarButton}>
+        <Pressable
+          style={styles.calendarButton}
+          onPress={() => setCalendarVisible(true)}
+        >
           <Ionicons
             name="calendar-outline"
             size={18}
@@ -61,13 +82,13 @@ export default function DateSelector() {
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.daysContainer}
       >
-        {DAYS.map((item) => {
-          const active = selectedDay === item.id;
+        {weekDates.map((date, index) => {
+          const active = isSameDate(date, selectedDate);
 
           return (
             <Pressable
-              key={item.id}
-              onPress={() => setSelectedDay(item.id)}
+              key={date.toISOString()}
+              onPress={() => onSelectDate(date)}
               style={[
                 styles.dayCard,
                 active && styles.activeDayCard,
@@ -79,7 +100,7 @@ export default function DateSelector() {
                   active && styles.activeText,
                 ]}
               >
-                {item.day}
+                {DAY_LABELS[index]}
               </Text>
 
               <Text
@@ -88,12 +109,19 @@ export default function DateSelector() {
                   active && styles.activeText,
                 ]}
               >
-                {item.date}
+                {date.getDate()}
               </Text>
             </Pressable>
           );
         })}
       </ScrollView>
+
+      <MonthCalendarModal
+        visible={calendarVisible}
+        onClose={() => setCalendarVisible(false)}
+        selectedDate={selectedDate}
+        onSelectDate={onSelectDate}
+      />
 
     </View>
   );

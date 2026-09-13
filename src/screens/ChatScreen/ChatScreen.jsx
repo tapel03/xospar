@@ -13,56 +13,27 @@ import {
 
 import { Ionicons } from "@expo/vector-icons";
 
+import { useAIChat } from "../../hooks/useAIChat";
+
 export default function ChatScreen({ navigation }) {
   const [message, setMessage] = useState("");
 
-  const [messages, setMessages] = useState([
-    {
-      id: "1",
-      text: "Hello! I'm MARKET AI. Ask me about markets, forex, stocks, commodities or crypto.",
-      sender: "ai",
-    },
-  ]);
+  const { messages, sendMessage, isSending } = useAIChat({
+    initialMessage:
+      "Hello! I'm MARKET AI. Ask me about markets, forex, stocks, commodities or crypto.",
+  });
 
-  const sendMessage = () => {
-    // Do nothing if the user presses send without typing anything.
+  const handleSend = () => {
     if (!message.trim()) {
       return;
     }
 
-    const newUserMessage = {
-      id: Date.now().toString(),
-      text: message.trim(),
-      sender: "user",
-    };
-
-    // Add the user's message to the chat.
-    setMessages((currentMessages) => [
-      ...currentMessages,
-      newUserMessage,
-    ]);
-
-    // Clear the input after sending.
+    sendMessage(message);
     setMessage("");
-
-    // Temporary AI response.
-    // Later, this is where you can connect Ollama/OpenAI/another AI API.
-    setTimeout(() => {
-      const aiMessage = {
-        id: `${Date.now()}-ai`,
-        text: "I'm ready to analyse that. The AI API can be connected here later.",
-        sender: "ai",
-      };
-
-      setMessages((currentMessages) => [
-        ...currentMessages,
-        aiMessage,
-      ]);
-    }, 500);
   };
 
   const renderMessage = ({ item }) => {
-    const isUser = item.sender === "user";
+    const isUser = item.role === "user";
 
     return (
       <View
@@ -130,7 +101,7 @@ export default function ChatScreen({ navigation }) {
             </Text>
 
             <Text style={styles.headerSubtitle}>
-              AI Market Analysis
+              {isSending ? "Thinking..." : "AI Market Analysis"}
             </Text>
           </View>
         </View>
@@ -164,11 +135,13 @@ export default function ChatScreen({ navigation }) {
           placeholderTextColor="#737C86"
           style={styles.input}
           multiline
+          editable={!isSending}
         />
 
         <Pressable
-          onPress={sendMessage}
-          style={styles.sendButton}
+          onPress={handleSend}
+          style={[styles.sendButton, isSending && styles.sendButtonDisabled]}
+          disabled={isSending}
         >
           <Ionicons
             name="arrow-up"
@@ -322,6 +295,10 @@ const styles = StyleSheet.create({
     backgroundColor: "#3A7BD5",
     alignItems: "center",
     justifyContent: "center",
+  },
+
+  sendButtonDisabled: {
+    opacity: 0.6,
   },
 
 })

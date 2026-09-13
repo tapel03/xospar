@@ -1,25 +1,36 @@
-import { useState } from "react";
-import { View, Text, Pressable, StyleSheet } from "react-native";
+import { Text, Pressable, StyleSheet, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
-export default function TaskItem({ handle, text, time }) {
-  const [checked, setChecked] = useState(false);
-
+export default function TaskItem({
+  handle,
+  text,
+  time,
+  acknowledged = false,
+  onPress,
+  onToggle,
+}) {
   return (
     <Pressable
       style={({ pressed }) => [styles.task, pressed && styles.taskPressed]}
-      onPress={() => setChecked((prev) => !prev)}
+      onPress={onPress}
     >
-      <View style={[styles.checkbox, checked && styles.checkboxChecked]}>
+      <Pressable
+        hitSlop={8}
+        onPress={(event) => {
+          event.stopPropagation?.();
+          onToggle?.();
+        }}
+        style={[styles.checkbox, acknowledged && styles.checkboxChecked]}
+      >
         <Ionicons
           name="checkmark"
           size={12}
           color="#000000"
-          style={{ opacity: checked ? 1 : 0 }}
+          style={{ opacity: acknowledged ? 1 : 0 }}
         />
-      </View>
+      </Pressable>
 
-      <Text style={[styles.taskText, checked && styles.taskTextChecked]}>
+      <Text style={[styles.taskText, acknowledged && styles.taskTextChecked]}>
         <Text style={styles.handle}>{handle} </Text>
         {text}
       </Text>

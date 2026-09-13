@@ -194,7 +194,7 @@ const styles = StyleSheet.create({
   },
 
   mapContainer: {
-    height: 140,
+    height: 450,
     marginTop: 12,
     borderRadius: 12,
     backgroundColor: "#090E14",

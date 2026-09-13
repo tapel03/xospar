@@ -14,60 +14,30 @@ import {
 
 import { Ionicons } from "@expo/vector-icons";
 
+import { useAIChat } from "../../../../hooks/useAIChat";
+
 export default function AIAnalysisScreen({ navigation }) {
   // Stores whatever the user types
   const [message, setMessage] = useState("");
 
-  // Stores the chat messages
-  const [messages, setMessages] = useState([
-    {
-      id: "1",
-      sender: "ai",
-      text: "Hello! I'm your MarketPulse AI. Ask me about markets, forex, stocks, commodities or crypto.",
-    },
-  ]);
+  const { messages, sendMessage, isSending } = useAIChat({
+    initialMessage:
+      "Hello! I'm your MarketPulse AI. Ask me about markets, forex, stocks, commodities or crypto.",
+  });
 
   // Runs when the user presses Send
-  const sendMessage = () => {
-    // Don't send an empty message
+  const handleSend = () => {
     if (!message.trim()) {
       return;
     }
 
-    // Add the user's message
-    const userMessage = {
-      id: Date.now().toString(),
-      sender: "user",
-      text: message,
-    };
-
-    setMessages((previousMessages) => [
-      ...previousMessages,
-      userMessage,
-    ]);
-
-    // Clear the input
+    sendMessage(message);
     setMessage("");
-
-    // Temporary AI response
-    // Later you can replace this with your actual AI API/Ollama call.
-    setTimeout(() => {
-      const aiMessage = {
-        id: (Date.now() + 1).toString(),
-        sender: "ai",
-        text: "I'm analysing that market question. Connect your AI API here later to return a real analysis.",
-      };
-
-      setMessages((previousMessages) => [
-        ...previousMessages,
-        aiMessage,
-      ]);
-    }, 500);
   };
 
   // Controls how each message looks
   const renderMessage = ({ item }) => {
-    const isUser = item.sender === "user";
+    const isUser = item.role === "user";
 
     return (
       <View
@@ -152,11 +122,13 @@ export default function AIAnalysisScreen({ navigation }) {
           placeholderTextColor="#777777"
           style={styles.input}
           multiline
+          editable={!isSending}
         />
 
         <Pressable
-          onPress={sendMessage}
-          style={styles.sendButton}
+          onPress={handleSend}
+          style={[styles.sendButton, isSending && styles.sendButtonDisabled]}
+          disabled={isSending}
         >
           <Ionicons
             name="arrow-up"
@@ -282,5 +254,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginLeft: 8,
   },
-});
 
+  sendButtonDisabled: {
+    opacity: 0.6,
+  },
+});

@@ -1,4 +1,4 @@
-
+import { useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -10,7 +10,74 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 
 import BookmarkButton from "./MarketsComponents/BookmarkButton";
+import AssetDetailModal from "./MarketsComponents/AssetDetailModal";
 import { useWatchlist } from "../../context/WatchlistContext";
+
+import { useForexPrices } from "../../hooks/useForexPrices";
+import { useCryptoTicker } from "../../hooks/useCryptoTicker";
+import { useStockTicker } from "../../hooks/useStockTicker";
+import * as apiConfig from "../../services/api/config";
+
+// Pull these out defensively - if any of these are missing/undefined from
+// config.js, we log a clear warning instead of crashing the whole module
+// (which is what was causing the blank screen when tapping a category).
+const ALL_TWELVE_DATA_SYMBOLS = Array.isArray(apiConfig.ALL_TWELVE_DATA_SYMBOLS)
+  ? apiConfig.ALL_TWELVE_DATA_SYMBOLS
+  : [];
+
+const FOREX_PAIR_LABELS = apiConfig.FOREX_PAIR_LABELS || {};
+const INDEX_LABELS = apiConfig.INDEX_LABELS || {};
+const CRYPTO_SYMBOLS = Array.isArray(apiConfig.CRYPTO_SYMBOLS)
+  ? apiConfig.CRYPTO_SYMBOLS
+  : [];
+const STOCK_SYMBOLS = Array.isArray(apiConfig.STOCK_SYMBOLS)
+  ? apiConfig.STOCK_SYMBOLS
+  : [];
+
+if (!Array.isArray(apiConfig.ALL_TWELVE_DATA_SYMBOLS)) {
+  console.warn(
+    "[MarketCategoryDetailScreen] ALL_TWELVE_DATA_SYMBOLS is missing or not an array from services/api/config. " +
+      "This would previously crash the screen on navigation (blank screen). Check the export name/shape in config.js."
+  );
+}
+
+// "BTC/USD" -> "BTCUSDT" so the display symbol can be looked up against
+// Binance's ticker payloads.
+function toBinanceSymbol(displaySymbol) {
+  const compact = displaySymbol.replace("/", "");
+  return compact.endsWith("USD") ? `${compact}T` : compact;
+}
+
+function formatPrice(value, category) {
+  if (value === null || value === undefined || Number.isNaN(value)) {
+    return "--";
+  }
+
+  const decimals = category === "Forex" ? 4 : 2;
+
+  return value.toLocaleString(undefined, {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  });
+}
+
+function formatPercent(value) {
+  if (value === null || value === undefined || Number.isNaN(value)) {
+    return "--";
+  }
+
+  return `${value >= 0 ? "+" : ""}${value.toFixed(2)}%`;
+}
+
+// Built from the live symbol list/labels in config.js so the 29 forex
+// pairs + DXY/JXY only ever need to be maintained in one place.
+const FOREX_PAIRS_DISPLAY = ALL_TWELVE_DATA_SYMBOLS.map((symbol) => ({
+  symbol,
+  name: FOREX_PAIR_LABELS[symbol] || symbol,
+  price: "--",
+  change: "0.00%",
+  positive: true,
+}));
 
 const CATEGORY_PAIRS = {
   Crypto: [
@@ -51,36 +118,7 @@ const CATEGORY_PAIRS = {
     },
   ],
 
-  Forex: [
-    {
-      symbol: "EUR/USD",
-      name: "Euro / US Dollar",
-      price: "1.0834",
-      change: "+0.42%",
-      positive: true,
-    },
-    {
-      symbol: "GBP/USD",
-      name: "British Pound / US Dollar",
-      price: "1.2687",
-      change: "-0.18%",
-      positive: false,
-    },
-    {
-      symbol: "USD/JPY",
-      name: "US Dollar / Japanese Yen",
-      price: "148.25",
-      change: "+0.31%",
-      positive: true,
-    },
-    {
-      symbol: "AUD/USD",
-      name: "Australian Dollar / US Dollar",
-      price: "0.6542",
-      change: "-0.22%",
-      positive: false,
-    },
-  ],
+  Forex: FOREX_PAIRS_DISPLAY,
 
   Indices: [
     {
@@ -147,21 +185,101 @@ const CATEGORY_PAIRS = {
 
 export default function MarketCategoryDetailScreen({ navigation, route }) {
   const category = route?.params?.category || "Crypto";
+  const [selectedAsset, setSelectedAsset] = useState(null);
 
-  const pairs = CATEGORY_PAIRS[category] || [];
+  // Only the hook matching the active category actually opens a
+  // connection/starts polling - the others are called with an empty
+  // symbol list so they stay idle (keeps this compliant with the rules
+  // of hooks while avoiding wasted network/API usage).
+  const liveForex = useForexPrices(category === "Forex" ? ALL_TWELVE_DATA_SYMBOLS : []);
+  const liveCrypto = useCryptoTicker(category === "Crypto" ? CRYPTO_SYMBOLS : []);
+  const liveStocks = useStockTicker(category === "Stocks" ? STOCK_SYMBOLS : []);
+
+  const pairs = useMemo(() => {
+    const basePairs = CATEGORY_PAIRS[category] || [];
+
+    return basePairs.map((pair) => {
+      let live = null;
+
+      try {
+        if (category === "Forex") {
+          live = liveForex?.quotes?.[pair.symbol];
+        } else if (category === "Crypto") {
+          live = liveCrypto?.tickers?.[toBinanceSymbol(pair.symbol)];
+        } else if (category === "Stocks") {
+          live = liveStocks?.quotes?.[pair.symbol];
+        }
+      } catch (err) {
+        console.warn("[MarketCategoryDetailScreen] Error reading live quote for", pair.symbol, err);
+      }
+
+      if (!live) {
+        return pair;
+      }
+
+      return {
+        ...pair,
+        price: formatPrice(live.price, category),
+        change: formatPercent(live.percentChange),
+        positive: live.positive,
+      };
+    });
+  }, [category, liveForex?.quotes, liveCrypto?.tickers, liveStocks?.quotes]);
 
   // Bookmarking any currency, pair, index, or stock here syncs it straight
   // into the Watch List on the Markets home screen.
   const { isBookmarked, toggleBookmark } = useWatchlist();
 
+  const statusLabel =
+    category === "Crypto"
+      ? liveCrypto?.status === "connected"
+        ? "Live"
+        : "Connecting..."
+      : category === "Stocks"
+      ? liveStocks?.status === "connected"
+        ? "Live"
+        : "Connecting..."
+      : category === "Forex"
+      ? liveForex?.lastUpdated
+        ? "Live"
+        : "Loading..."
+      : null;
+
+  const handlePressAsset = (pair) => {
+    // Create watchlist asset shape. `category` is carried along so the
+    // asset detail modal knows which price-history API to call for the
+    // chart (Twelve Data for Forex, Finnhub for Crypto/Stocks, etc).
+    const watchlistAsset = {
+      symbol: pair.symbol,
+      name: pair.name,
+      pair: pair.name,
+      price: pair.price,
+      change: pair.change,
+      positive: pair.positive,
+      icon: pair.symbol.charAt(0),
+      category,
+    };
+
+    // Set selected asset to open modal
+    setSelectedAsset(watchlistAsset);
+  };
+
+  const handleCloseModal = () => {
+    setSelectedAsset(null);
+  };
+
+  const handleToggleBookmark = () => {
+    if (selectedAsset) {
+      toggleBookmark(selectedAsset);
+    }
+  };
+
   return (
     <View style={styles.container}>
-
       {/* =========================
           HEADER
       ========================== */}
       <View style={styles.header}>
-
         <Pressable
           onPress={() => navigation.goBack()}
           style={styles.backButton}
@@ -178,9 +296,7 @@ export default function MarketCategoryDetailScreen({ navigation, route }) {
         </Text>
 
         <View style={styles.headerSpacer} />
-
       </View>
-
 
       {/* =========================
           TRADING PAIRS
@@ -189,12 +305,31 @@ export default function MarketCategoryDetailScreen({ navigation, route }) {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}
       >
+        <View style={styles.sectionTitleRow}>
+          <Text style={styles.sectionTitle}>
+            Trading Pairs
+          </Text>
 
-        <Text style={styles.sectionTitle}>
-          Trading Pairs
-        </Text>
+          {statusLabel && (
+            <View style={styles.statusPill}>
+              <View
+                style={[
+                  styles.statusDot,
+                  { backgroundColor: statusLabel === "Live" ? "#4ADE80" : "#8B949E" },
+                ]}
+              />
+              <Text style={styles.statusText}>{statusLabel}</Text>
+            </View>
+          )}
+        </View>
 
-        {pairs.map((pair) => {
+        {pairs.length === 0 && (
+          <Text style={styles.emptyText}>
+            No trading pairs available for {category} right now.
+          </Text>
+        )}
+
+        {pairs.map((pair, index) => {
           // Shared shape so this asset renders correctly in the Watch List,
           // no matter which category (currency, pair, index, stock) it came from.
           const watchlistAsset = {
@@ -205,22 +340,25 @@ export default function MarketCategoryDetailScreen({ navigation, route }) {
             change: pair.change,
             positive: pair.positive,
             icon: pair.symbol.charAt(0),
+            category,
           };
 
           return (
             <Pressable
-              key={pair.symbol}
+              key={pair.symbol || index}
               style={({ pressed }) => [
                 styles.pairRow,
                 pressed && styles.pairPressed,
               ]}
+              onPress={() => handlePressAsset(pair)}
             >
-
               <View style={styles.pairLeft}>
-
                 <BookmarkButton
                   bookmarked={isBookmarked(pair.symbol)}
-                  onPress={() => toggleBookmark(watchlistAsset)}
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    toggleBookmark(watchlistAsset);
+                  }}
                 />
 
                 <View style={styles.icon}>
@@ -238,12 +376,9 @@ export default function MarketCategoryDetailScreen({ navigation, route }) {
                     {pair.name}
                   </Text>
                 </View>
-
               </View>
 
-
               <View style={styles.pairRight}>
-
                 <Text style={styles.price}>
                   {pair.price}
                 </Text>
@@ -261,7 +396,6 @@ export default function MarketCategoryDetailScreen({ navigation, route }) {
                   {pair.positive ? "↑ " : "↓ "}
                   {pair.change}
                 </Text>
-
               </View>
 
               <Ionicons
@@ -269,13 +403,19 @@ export default function MarketCategoryDetailScreen({ navigation, route }) {
                 size={17}
                 color="#59636D"
               />
-
             </Pressable>
           );
         })}
-
       </ScrollView>
 
+      {/* Modal for asset details */}
+      <AssetDetailModal
+        asset={selectedAsset}
+        visible={selectedAsset !== null}
+        onClose={handleCloseModal}
+        bookmarked={selectedAsset ? isBookmarked(selectedAsset.symbol) : false}
+        onToggleBookmark={handleToggleBookmark}
+      />
     </View>
   );
 }
@@ -317,13 +457,51 @@ const styles = StyleSheet.create({
     paddingBottom: 30,
   },
 
+  sectionTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingTop: 20,
+    paddingBottom: 8,
+  },
+
   sectionTitle: {
     color: "#FFFFFF",
     fontSize: 20,
     fontWeight: "700",
+  },
+
+  statusPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "#101820",
+    borderWidth: 1,
+    borderColor: "#1C2630",
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+
+  statusText: {
+    color: "#AAAAAA",
+    fontSize: 11,
+    fontWeight: "600",
+  },
+
+  emptyText: {
+    color: "#8B949E",
+    fontSize: 13,
+    lineHeight: 19,
     paddingHorizontal: 16,
-    paddingTop: 20,
-    paddingBottom: 8,
+    paddingVertical: 20,
   },
 
   pairRow: {
