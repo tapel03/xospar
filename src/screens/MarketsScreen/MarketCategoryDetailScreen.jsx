@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -185,6 +185,13 @@ const CATEGORY_PAIRS = {
 
 export default function MarketCategoryDetailScreen({ navigation, route }) {
   const category = route?.params?.category || "Crypto";
+
+  // Set by the Home search screen so a picked asset opens its detail
+  // sheet straight away. `openKey` changes on every search pick, so
+  // choosing the same asset twice still re-opens it.
+  const openSymbol = route?.params?.openSymbol;
+  const openKey = route?.params?.openKey;
+
   const [selectedAsset, setSelectedAsset] = useState(null);
 
   // Only the hook matching the active category actually opens a
@@ -226,6 +233,34 @@ export default function MarketCategoryDetailScreen({ navigation, route }) {
     });
   }, [category, liveForex?.quotes, liveCrypto?.tickers, liveStocks?.quotes]);
 
+  // The same list, but reshaped into the asset shape AssetDetailModal
+  // expects - lets swiping inside the modal cycle through only this
+  // category's pairs (never mixing in the Watch List or another category).
+  const categoryAssets = useMemo(
+    () =>
+      pairs.map((pair) => ({
+        symbol: pair.symbol,
+        name: pair.name,
+        pair: pair.name,
+        price: pair.price,
+        change: pair.change,
+        positive: pair.positive,
+        icon: pair.symbol.charAt(0),
+        category,
+      })),
+    [pairs, category]
+  );
+
+  const selectedIndex = useMemo(
+    () =>
+      selectedAsset
+        ? categoryAssets.findIndex(
+            (item) => item.symbol === selectedAsset.symbol
+          )
+        : -1,
+    [selectedAsset, categoryAssets]
+  );
+
   // Bookmarking any currency, pair, index, or stock here syncs it straight
   // into the Watch List on the Markets home screen.
   const { isBookmarked, toggleBookmark } = useWatchlist();
@@ -263,6 +298,20 @@ export default function MarketCategoryDetailScreen({ navigation, route }) {
     // Set selected asset to open modal
     setSelectedAsset(watchlistAsset);
   };
+
+  // Open the asset picked from Home search (runs once per search pick).
+  useEffect(() => {
+    if (!openSymbol) {
+      return;
+    }
+
+    const match = pairs.find((pair) => pair.symbol === openSymbol);
+
+    if (match) {
+      handlePressAsset(match);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openSymbol, openKey]);
 
   const handleCloseModal = () => {
     setSelectedAsset(null);
@@ -415,6 +464,9 @@ export default function MarketCategoryDetailScreen({ navigation, route }) {
         onClose={handleCloseModal}
         bookmarked={selectedAsset ? isBookmarked(selectedAsset.symbol) : false}
         onToggleBookmark={handleToggleBookmark}
+        assets={categoryAssets}
+        currentIndex={selectedIndex}
+        onNavigate={(index) => setSelectedAsset(categoryAssets[index])}
       />
     </View>
   );

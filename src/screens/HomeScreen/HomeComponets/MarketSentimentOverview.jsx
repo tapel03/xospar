@@ -1,64 +1,186 @@
-import { View, Text, StyleSheet } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { useState } from "react";
+import { View, Text, StyleSheet, Pressable } from "react-native";
 
-export default function MarketSentimentOverview() {
+import MarketPressureGrid from "./MarketPressureGrid";
+
+export default function MarketSentimentOverview({
+  pairs = [],
+  defaultPair = null,
+}) {
+  const [selectedPair, setSelectedPair] = useState(
+    defaultPair || pairs[0] || null
+  );
+
+  const [pickerOpen, setPickerOpen] = useState(false);
+
   return (
     <View style={styles.card}>
+      {/* =====================================================
+          MARKET SENTIMENT
+      ===================================================== */}
 
-      <Text style={styles.sectionTitle}>Market Sentiment Overview</Text>
+      <Text style={styles.sectionTitle}>
+        Market Sentiment Overview
+      </Text>
 
       <View style={styles.gaugeContainer}>
-
         <View style={styles.circle}>
-          <Text style={styles.bullish}>BULLISH</Text>
-          <Text style={styles.score}>62</Text>
-          <Text style={styles.total}>/100</Text>
+          <Text style={styles.bullish}>
+            BULLISH
+          </Text>
+
+          <Text style={styles.score}>
+            62
+          </Text>
+
+          <Text style={styles.total}>
+            /100
+          </Text>
         </View>
 
         <View style={styles.stats}>
           <View style={styles.row}>
             <View style={styles.greenDot} />
-            <Text style={styles.label}>Positive</Text>
-            <Text style={styles.value}>62%</Text>
+
+            <Text style={styles.label}>
+              Positive
+            </Text>
+
+            <Text style={styles.value}>
+              62%
+            </Text>
           </View>
 
           <View style={styles.row}>
             <View style={styles.grayDot} />
-            <Text style={styles.label}>Neutral</Text>
-            <Text style={styles.value}>23%</Text>
+
+            <Text style={styles.label}>
+              Neutral
+            </Text>
+
+            <Text style={styles.value}>
+              23%
+            </Text>
           </View>
 
           <View style={styles.row}>
             <View style={styles.redDot} />
-            <Text style={styles.label}>Negative</Text>
-            <Text style={styles.value}>15%</Text>
+
+            <Text style={styles.label}>
+              Negative
+            </Text>
+
+            <Text style={styles.value}>
+              15%
+            </Text>
           </View>
         </View>
-
       </View>
 
       <View style={styles.divider} />
 
-      <View style={styles.headerRow}>
-        <Text style={styles.subHeading}>Sentiment Over Time</Text>
+      {/* =====================================================
+          MARKET PRESSURE
+      ===================================================== */}
 
-        <View style={styles.days}>
-          <Text style={styles.daysText}>7 Days</Text>
-        </View>
+      <View style={styles.pressureHeader}>
+        <Text style={styles.pressureTitle}>
+          MARKET PRESSURE
+        </Text>
+
+        <Text style={styles.pressureSubtitle}>
+          Select a pair
+        </Text>
       </View>
 
-      <View style={styles.chart}>
-        <Ionicons name="trending-up" size={120} color="#FFFFFF22" />
+      {/* PAIR SELECTOR */}
+      <View style={styles.pickerWrapper}>
+        <Pressable
+          style={styles.picker}
+          onPress={() => setPickerOpen((prev) => !prev)}
+        >
+          <View>
+            <Text style={styles.pickerLabel}>
+              PAIR
+            </Text>
+
+            <Text style={styles.pickerValue}>
+              {selectedPair?.name ||
+                selectedPair?.symbol ||
+                "Select pair"}
+            </Text>
+          </View>
+
+          <Text style={styles.arrow}>
+            {pickerOpen ? "▲" : "▼"}
+          </Text>
+        </Pressable>
+
+        {/* DROPDOWN */}
+        {pickerOpen && (
+          <View style={styles.dropdown}>
+            {pairs.map((pair) => {
+              const isSelected =
+                selectedPair?.symbol === pair.symbol;
+
+              return (
+                <Pressable
+                  key={pair.symbol}
+                  style={[
+                    styles.dropdownItem,
+                    isSelected &&
+                      styles.dropdownItemSelected,
+                  ]}
+                  onPress={() => {
+                    setSelectedPair(pair);
+                    setPickerOpen(false);
+                  }}
+                >
+                  <View>
+                    <Text
+                      style={[
+                        styles.dropdownName,
+                        isSelected &&
+                          styles.dropdownNameSelected,
+                      ]}
+                    >
+                      {pair.name}
+                    </Text>
+
+                    <Text style={styles.dropdownSymbol}>
+                      {pair.symbol}
+                    </Text>
+                  </View>
+
+                  {isSelected && (
+                    <Text style={styles.check}>
+                      ✓
+                    </Text>
+                  )}
+                </Pressable>
+              );
+            })}
+          </View>
+        )}
       </View>
+
+      {/* PRESSURE GRID */}
+      <MarketPressureGrid
+        pair={selectedPair}
+      />
 
       <View style={styles.divider} />
 
-      <Text style={styles.subHeading}>News Impact Heatmap</Text>
+      {/* NEWS */}
+      <Text style={styles.subHeading}>
+        News Impact Heatmap
+      </Text>
 
       <View style={styles.mapContainer}>
-        <Ionicons name="earth" size={120} color="#777777" />
+        <Text style={styles.placeholderText}>
+          News impact heatmap
+        </Text>
       </View>
-
     </View>
   );
 }
@@ -108,50 +230,55 @@ const styles = StyleSheet.create({
   },
 
   total: {
-    color: "#AAAAAA",
+    color: "#888888",
+    fontSize: 12,
   },
 
   stats: {
     flex: 1,
     marginLeft: 20,
-    gap: 14,
   },
 
   row: {
     flexDirection: "row",
     alignItems: "center",
-  },
-
-  label: {
-    flex: 1,
-    color: "#FFFFFF",
-    marginLeft: 10,
-  },
-
-  value: {
-    color: "#FFFFFF",
-    fontWeight: "700",
+    marginBottom: 12,
   },
 
   greenDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: "#5DE38B",
+    backgroundColor: "#4ADE80",
+    marginRight: 8,
   },
 
   grayDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: "#999999",
+    backgroundColor: "#888888",
+    marginRight: 8,
   },
 
   redDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: "#FF6464",
+    backgroundColor: "#FF5A5F",
+    marginRight: 8,
+  },
+
+  label: {
+    flex: 1,
+    color: "#AAAAAA",
+    fontSize: 12,
+  },
+
+  value: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "700",
   },
 
   divider: {
@@ -160,45 +287,129 @@ const styles = StyleSheet.create({
     marginVertical: 18,
   },
 
-  headerRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+  pressureHeader: {
+    marginBottom: 10,
   },
 
-  subHeading: {
+  pressureTitle: {
     color: "#FFFFFF",
-    fontWeight: "600",
-    fontSize: 14,
+    fontSize: 15,
+    fontWeight: "800",
+    letterSpacing: 0.5,
   },
 
-  days: {
-    backgroundColor: "#1C2630",
-    paddingHorizontal: 12,
-    paddingVertical: 5,
+  pressureSubtitle: {
+    color: "#777F84",
+    fontSize: 10,
+    marginTop: 3,
+  },
+
+  pickerWrapper: {
+    position: "relative",
+    zIndex: 20,
+    marginBottom: 12,
+  },
+
+  picker: {
+    minHeight: 54,
+    backgroundColor: "#080D12",
+    borderWidth: 1,
+    borderColor: "#26313A",
     borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
 
-  daysText: {
+  pickerLabel: {
+    color: "#68737C",
+    fontSize: 8,
+    fontWeight: "700",
+    letterSpacing: 1,
+  },
+
+  pickerValue: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "700",
+    marginTop: 3,
+  },
+
+  arrow: {
     color: "#FFFFFF",
     fontSize: 12,
   },
 
-  chart: {
+  dropdown: {
+    position: "absolute",
+    top: 58,
+    left: 0,
+    right: 0,
+    backgroundColor: "#101820",
+    borderWidth: 1,
+    borderColor: "#26313A",
+    borderRadius: 10,
+    overflow: "hidden",
+    zIndex: 100,
+    elevation: 10,
+  },
+
+  dropdownItem: {
+    minHeight: 52,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderBottomWidth: 1,
+    borderBottomColor: "#1C2630",
+  },
+
+  dropdownItemSelected: {
+    backgroundColor: "#17232B",
+  },
+
+  dropdownName: {
+    color: "#FFFFFF",
+    fontSize: 13,
+    fontWeight: "600",
+  },
+
+  dropdownNameSelected: {
+    color: "#4ADE80",
+  },
+
+  dropdownSymbol: {
+    color: "#68737C",
+    fontSize: 9,
+    marginTop: 2,
+  },
+
+  check: {
+    color: "#4ADE80",
+    fontSize: 16,
+    fontWeight: "700",
+  },
+
+  subHeading: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "700",
+    marginBottom: 10,
+  },
+
+  mapContainer: {
     height: 120,
-    marginTop: 12,
-    backgroundColor: "#090E14",
-    borderRadius: 12,
+    backgroundColor: "#080D12",
+    borderRadius: 10,
     justifyContent: "center",
     alignItems: "center",
   },
 
-  mapContainer: {
-    height: 450,
-    marginTop: 12,
-    borderRadius: 12,
-    backgroundColor: "#090E14",
-    justifyContent: "center",
-    alignItems: "center",
+  placeholderText: {
+    color: "#68737C",
+    fontSize: 12,
   },
 });

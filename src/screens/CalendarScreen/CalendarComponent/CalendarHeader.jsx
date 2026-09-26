@@ -1,4 +1,5 @@
 import { View, Text, StyleSheet } from "react-native";
+import { colors } from "../../../theme/colors";
 
 export default function CalendarHeader() {
   return (
@@ -16,11 +17,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 8,
     paddingBottom: 4,
-    backgroundColor: "#101820",
+    backgroundColor: colors[50],
   },
 
   title: {
-    color: "#FFFFFF",
+    color: colors[950],
     fontSize: 24,
     fontWeight: "bold",
   },

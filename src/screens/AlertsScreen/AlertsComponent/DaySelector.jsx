@@ -1,29 +1,22 @@
-import { useState } from "react";
+import { useMemo } from "react";
 import { View, Text, Pressable, StyleSheet } from "react-native";
 
-const DAYS = [
-  { id: "mon", label: "Mon", date: "12" },
-  { id: "tue", label: "Tue", date: "13" },
-  { id: "wed", label: "Wed", date: "14" },
-  { id: "thu", label: "Thu", date: "15" },
-  { id: "fri", label: "Fri", date: "16" },
-  { id: "sat", label: "Sat", date: "17" },
-  { id: "sun", label: "Sun", date: "18" },
-];
+import { getCurrentWeekDays } from "../../../utils/weekDates";
+import { colors } from "../../../theme/colors";
 
-export default function DaySelector() {
-  const [selectedDay, setSelectedDay] = useState("fri");
+export default function DaySelector({ selectedDay, onSelectDay }) {
+  const days = useMemo(() => getCurrentWeekDays(), []);
 
   return (
     <View style={styles.container}>
-      {DAYS.map((day) => {
-        const active = selectedDay === day.id;
+      {days.map((day) => {
+        const active = selectedDay === day.key;
 
         return (
           <Pressable
-            key={day.id}
+            key={day.key}
             style={styles.day}
-            onPress={() => setSelectedDay(day.id)}
+            onPress={() => onSelectDay(day.key)}
           >
             <Text style={[styles.dayLabel, active && styles.activeDayLabel]}>
               {day.label}
@@ -36,9 +29,11 @@ export default function DaySelector() {
                   active && styles.activeDayDateText,
                 ]}
               >
-                {day.date}
+                {day.dateNum}
               </Text>
             </View>
+
+            {day.isToday && !active ? <View style={styles.todayDot} /> : null}
           </Pressable>
         );
       })}
@@ -63,11 +58,11 @@ const styles = StyleSheet.create({
   dayLabel: {
     fontSize: 12,
     fontWeight: "500",
-    color: "#8e8e93",
+    color: colors[500],
   },
 
   activeDayLabel: {
-    color: "#FFFFFF",
+    color: colors[950],
     fontWeight: "700",
   },
 
@@ -80,17 +75,26 @@ const styles = StyleSheet.create({
   },
 
   activeDayDate: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors[950],
   },
 
   dayDateText: {
     fontSize: 14,
     fontWeight: "500",
-    color: "#8e8e93",
+    color: colors[500],
   },
 
   activeDayDateText: {
-    color: "#000000",
+    color: colors.base,
     fontWeight: "700",
+  },
+
+  todayDot: {
+    position: "absolute",
+    bottom: -2,
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "#3A7BD5",
   },
 });

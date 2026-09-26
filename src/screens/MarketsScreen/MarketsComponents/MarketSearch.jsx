@@ -16,6 +16,7 @@ export default function MarketSearch() {
   );
 }
 
+
 const styles = StyleSheet.create({
   container: {
     width: "100%",
@@ -25,7 +26,7 @@ const styles = StyleSheet.create({
 
   input: {
     height: 45,
-    backgroundColor: "#1C2630",
+    backgroundColor: "#171717",
     borderRadius: 10,
     paddingHorizontal: 15,
     color: "#FFFFFF",

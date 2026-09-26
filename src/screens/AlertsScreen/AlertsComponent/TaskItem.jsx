@@ -6,29 +6,44 @@ export default function TaskItem({
   text,
   time,
   acknowledged = false,
+  editMode = false,
   onPress,
   onToggle,
+  onDelete,
 }) {
   return (
     <Pressable
       style={({ pressed }) => [styles.task, pressed && styles.taskPressed]}
       onPress={onPress}
     >
-      <Pressable
-        hitSlop={8}
-        onPress={(event) => {
-          event.stopPropagation?.();
-          onToggle?.();
-        }}
-        style={[styles.checkbox, acknowledged && styles.checkboxChecked]}
-      >
-        <Ionicons
-          name="checkmark"
-          size={12}
-          color="#000000"
-          style={{ opacity: acknowledged ? 1 : 0 }}
-        />
-      </Pressable>
+      {editMode ? (
+        <Pressable
+          hitSlop={8}
+          onPress={(event) => {
+            event.stopPropagation?.();
+            onDelete?.();
+          }}
+          style={styles.deleteButton}
+        >
+          <Ionicons name="remove" size={14} color="#FFFFFF" />
+        </Pressable>
+      ) : (
+        <Pressable
+          hitSlop={8}
+          onPress={(event) => {
+            event.stopPropagation?.();
+            onToggle?.();
+          }}
+          style={[styles.checkbox, acknowledged && styles.checkboxChecked]}
+        >
+          <Ionicons
+            name="checkmark"
+            size={12}
+            color="#000000"
+            style={{ opacity: acknowledged ? 1 : 0 }}
+          />
+        </Pressable>
+      )}
 
       <Text style={[styles.taskText, acknowledged && styles.taskTextChecked]}>
         <Text style={styles.handle}>{handle} </Text>
@@ -73,6 +88,16 @@ const styles = StyleSheet.create({
   checkboxChecked: {
     backgroundColor: "#FFFFFF",
     borderColor: "#FFFFFF",
+  },
+
+  deleteButton: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: "#FF5A5F",
+    marginTop: 2,
+    alignItems: "center",
+    justifyContent: "center",
   },
 
   taskText: {

@@ -34,7 +34,7 @@ export default function Notifications() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#101820",
+    backgroundColor: "#0A0A0A",
     paddingTop: 20,
     paddingHorizontal: 20,
   },
@@ -52,7 +52,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: "#1C2630",
+    borderBottomColor: "#171717",
   },
 
   label: {

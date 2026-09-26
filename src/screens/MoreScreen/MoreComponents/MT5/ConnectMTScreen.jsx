@@ -53,6 +53,7 @@ export default function ConnectMTScreen() {
 
 }
 
+
 const styles = StyleSheet.create({
 
   container: {
@@ -83,7 +84,7 @@ const styles = StyleSheet.create({
   },
 
   button: {
-    backgroundColor: "#2F80ED",
+    backgroundColor: "#FFFFFF",
     width: "100%",
     paddingVertical: 16,
     borderRadius: 12,
@@ -102,13 +103,13 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#2F80ED",
+    borderColor: "#FFFFFF",
     alignItems: "center",
     marginTop: 14,
   },
 
   secondaryText: {
-    color: "#2F80ED",
+    color: "#FFFFFF",
     fontWeight: "700",
     fontSize: 16,
   },

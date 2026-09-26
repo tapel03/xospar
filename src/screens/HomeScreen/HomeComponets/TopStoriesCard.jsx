@@ -1,80 +1,185 @@
-import { View, Text, StyleSheet, Image, Pressable } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Image,
+  Pressable,
+  ActivityIndicator,
+  Linking,
+} from "react-native";
+
 import { Ionicons } from "@expo/vector-icons";
 
-export default function TopStoriesCard() {
+function StoryImage({ uri }) {
+  if (uri) {
+    return <Image source={{ uri }} style={styles.image} />;
+  }
+
+  return (
+    <View style={[styles.image, styles.imagePlaceholder]}>
+      <Ionicons
+        name="globe-outline"
+        size={34}
+        color="#5E6873"
+      />
+    </View>
+  );
+}
+
+export default function TopStoriesCard({
+  navigation,
+  stories = [],
+  loading = false,
+}) {
+  const mainStory = stories[0];
+  const secondaryStories = stories.slice(1, 3);
+
+  const openStory = async (story) => {
+    if (!story?.url) {
+      return;
+    }
+
+    try {
+      await Linking.openURL(story.url);
+    } catch (error) {
+      console.warn("Unable to open news story:", error);
+    }
+  };
+
+  if (loading && !mainStory) {
+    return (
+      <View style={styles.card}>
+        <Text style={styles.sectionTitle}>Top Stories</Text>
+
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="small" color="#FFFFFF" />
+          <Text style={styles.loadingText}>
+            Loading latest market news...
+          </Text>
+        </View>
+      </View>
+    );
+  }
+
+  if (!mainStory) {
+    return (
+      <View style={styles.card}>
+        <Text style={styles.sectionTitle}>Top Stories</Text>
+
+        <Text style={styles.emptyText}>
+          No market-moving stories are available right now.
+        </Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.card}>
+      <View style={styles.headerRow}>
+        <Text style={styles.sectionTitle}>Top Stories</Text>
 
-      <Text style={styles.sectionTitle}>Top Stories</Text>
-
-      <View style={styles.imageContainer}>
-
-        <Image
-          source={{
-            uri:
-              "https://images.unsplash.com/photo-1511884642898-4c92249e20b6?w=900",
-          }}
-          style={styles.image}
-        />
-
-        <View style={styles.badge}>
-          <Text style={styles.badgeText}>High Impact</Text>
-        </View>
-
+        {loading ? (
+          <ActivityIndicator size="small" color="#AAAAAA" />
+        ) : null}
       </View>
 
-      <Text style={styles.headline}>
-        Fed Holds Rates Steady, Signals One Cut Later This Year
-      </Text>
+      <Pressable
+        style={({ pressed }) => [
+          styles.mainStory,
+          pressed && styles.pressed,
+        ]}
+        onPress={() => openStory(mainStory)}
+      >
+        <View style={styles.imageContainer}>
+          <StoryImage uri={mainStory.image} />
 
-      <Text style={styles.description}>
-        The Federal Reserve kept interest rates unchanged but indicated one rate cut could come later this year as inflation eases and growth moderates.
-      </Text>
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>
+              {mainStory.impact} Impact
+            </Text>
+          </View>
+        </View>
 
-      <View style={styles.metaRow}>
-        <Text style={styles.meta}>Reuters • 2m ago • USD</Text>
+        <Text style={styles.headline} numberOfLines={3}>
+          {mainStory.title}
+        </Text>
 
-        <Ionicons name="bookmark-outline" size={18} color="#AAAAAA" />
-      </View>
+        <Text style={styles.description} numberOfLines={3}>
+          {mainStory.description}
+        </Text>
 
-      <View style={styles.divider} />
-
-      <Pressable style={styles.smallStory}>
-        <View style={styles.thumbnail} />
-
-        <View style={styles.storyContent}>
-          <Text style={styles.storyTitle}>
-            US Inflation Cools in April, Below Expectations
+        <View style={styles.metaRow}>
+          <Text style={styles.meta} numberOfLines={1}>
+            {mainStory.source} • {mainStory.time} •{" "}
+            {mainStory.markets.join(" / ")}
           </Text>
 
-          <Text style={styles.storyMeta}>Bloomberg • 15m ago • USD</Text>
-        </View>
-
-        <View style={styles.mediumBadge}>
-          <Text style={styles.mediumText}>Medium</Text>
-        </View>
-      </Pressable>
-
-      <Pressable style={styles.smallStory}>
-        <View style={styles.thumbnail} />
-
-        <View style={styles.storyContent}>
-          <Text style={styles.storyTitle}>
-            Oil Prices Fall on Rising Inventory Concerns
-          </Text>
-
-          <Text style={styles.storyMeta}>CNBC • 25m ago • Oil</Text>
-        </View>
-
-        <View style={styles.mediumBadge}>
-          <Text style={styles.mediumText}>Medium</Text>
+          <Ionicons
+            name="bookmark-outline"
+            size={18}
+            color="#AAAAAA"
+          />
         </View>
       </Pressable>
 
-      <Pressable style={styles.footerButton}>
-        <Text style={styles.footerText}>View All News →</Text>
-      </Pressable>
+      {secondaryStories.length > 0 ? (
+        <View style={styles.divider} />
+      ) : null}
 
+      {secondaryStories.map((story) => (
+        <Pressable
+          key={story.id}
+          style={styles.smallStory}
+          onPress={() => openStory(story)}
+        >
+          {story.image ? (
+            <Image
+              source={{ uri: story.image }}
+              style={styles.thumbnail}
+            />
+          ) : (
+            <View style={[styles.thumbnail, styles.thumbnailPlaceholder]}>
+              <Ionicons
+                name="newspaper-outline"
+                size={20}
+                color="#5E6873"
+              />
+            </View>
+          )}
+
+          <View style={styles.storyContent}>
+            <Text
+              style={styles.storyTitle}
+              numberOfLines={2}
+            >
+              {story.title}
+            </Text>
+
+            <Text
+              style={styles.storyMeta}
+              numberOfLines={1}
+            >
+              {story.source} • {story.time} •{" "}
+              {story.markets[0]}
+            </Text>
+          </View>
+
+          <View style={styles.mediumBadge}>
+            <Text style={styles.mediumText}>
+              {story.impact}
+            </Text>
+          </View>
+        </Pressable>
+      ))}
+
+      <Pressable
+        style={styles.footerButton}
+        onPress={() => navigation.navigate("News")}
+      >
+        <Text style={styles.footerText}>
+          View All News →
+        </Text>
+      </Pressable>
     </View>
   );
 }
@@ -88,6 +193,12 @@ const styles = StyleSheet.create({
     padding: 14,
   },
 
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+
   sectionTitle: {
     color: "#FFFFFF",
     fontSize: 16,
@@ -95,57 +206,76 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
 
+  mainStory: {
+    width: "100%",
+  },
+
+  pressed: {
+    opacity: 0.75,
+  },
+
   imageContainer: {
+    width: "100%",
+    height: 190,
+    borderRadius: 14,
+    overflow: "hidden",
     position: "relative",
+    backgroundColor: "#1C2630",
   },
 
   image: {
     width: "100%",
-    height: 170,
-    borderRadius: 12,
+    height: "100%",
+  },
+
+  imagePlaceholder: {
+    alignItems: "center",
+    justifyContent: "center",
   },
 
   badge: {
     position: "absolute",
-    right: 10,
+    left: 10,
     top: 10,
-    backgroundColor: "#2A2F38",
-    paddingHorizontal: 10,
+    backgroundColor: "#3B1F20",
+    paddingHorizontal: 9,
     paddingVertical: 5,
     borderRadius: 12,
   },
 
   badgeText: {
-    color: "#FFFFFF",
+    color: "#FF5A5F",
     fontSize: 10,
     fontWeight: "700",
   },
 
   headline: {
     color: "#FFFFFF",
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: "700",
-    marginTop: 14,
-    lineHeight: 28,
+    lineHeight: 24,
+    marginTop: 12,
   },
 
   description: {
-    color: "#98A2AD",
-    fontSize: 13,
-    lineHeight: 20,
-    marginTop: 10,
+    color: "#9DA4AE",
+    fontSize: 12,
+    lineHeight: 18,
+    marginTop: 7,
   },
 
   metaRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    marginTop: 12,
+    justifyContent: "space-between",
+    marginTop: 10,
   },
 
   meta: {
+    flex: 1,
     color: "#777F88",
-    fontSize: 12,
+    fontSize: 10,
+    marginRight: 10,
   },
 
   divider: {
@@ -163,9 +293,14 @@ const styles = StyleSheet.create({
   thumbnail: {
     width: 56,
     height: 56,
-    backgroundColor: "#303841",
     borderRadius: 10,
     marginRight: 12,
+    backgroundColor: "#303841",
+  },
+
+  thumbnailPlaceholder: {
+    alignItems: "center",
+    justifyContent: "center",
   },
 
   storyContent: {
@@ -190,6 +325,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 10,
+    marginLeft: 8,
   },
 
   mediumText: {
@@ -199,11 +335,30 @@ const styles = StyleSheet.create({
   },
 
   footerButton: {
-    paddingTop: 6,
+    paddingTop: 2,
   },
 
   footerText: {
     color: "#3A7BD5",
     fontWeight: "600",
+  },
+
+  loadingContainer: {
+    minHeight: 120,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+  },
+
+  loadingText: {
+    color: "#7D8691",
+    fontSize: 12,
+  },
+
+  emptyText: {
+    color: "#7D8691",
+    fontSize: 13,
+    lineHeight: 19,
+    paddingVertical: 20,
   },
 });

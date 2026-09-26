@@ -1,20 +1,19 @@
 import { View, Text, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
-export default function AlertHeader() {
+import { colors } from "../../../theme/colors";
+
+export default function AlertHeader({ dayLabel = "Today", total = 0, acknowledged = 0 }) {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>today</Text>
+      <Text style={styles.title}>{dayLabel}</Text>
 
       <View style={styles.badges}>
         <View style={styles.badge}>
-          <Ionicons name="checkmark-circle-outline" size={14} color="#8e8e93" />
-          <Text style={styles.badgeText}>24</Text>
-        </View>
-
-        <View style={styles.badge}>
-          <Ionicons name="time-outline" size={14} color="#8e8e93" />
-          <Text style={styles.badgeText}>1.5 of 7.5 hrs</Text>
+          <Ionicons name="checkmark-circle-outline" size={14} color={colors[500]} />
+          <Text style={styles.badgeText}>
+            {acknowledged}/{total}
+          </Text>
         </View>
       </View>
     </View>
@@ -33,7 +32,7 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontWeight: "700",
     letterSpacing: -0.5,
-    color: "#FFFFFF",
+    color: colors[950],
   },
 
   badges: {
@@ -45,7 +44,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 5,
-    backgroundColor: "#1c1c1e",
+    backgroundColor: colors[100],
     borderRadius: 14,
     paddingVertical: 6,
     paddingHorizontal: 10,
@@ -54,6 +53,6 @@ const styles = StyleSheet.create({
   badgeText: {
     fontSize: 12,
     fontWeight: "600",
-    color: "#8e8e93",
+    color: colors[500],
   },
 });

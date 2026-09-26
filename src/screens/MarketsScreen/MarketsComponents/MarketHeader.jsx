@@ -1,4 +1,5 @@
 import { View, Text, StyleSheet } from "react-native";
+import { colors } from "../../../theme/colors";
 
 export default function MarketHeader() {
   return (
@@ -14,11 +15,11 @@ const styles = StyleSheet.create({
   container: {
     width: "100%",
     padding: 20,
-    backgroundColor: "#000000",
+    backgroundColor: colors.base,
   },
 
   title: {
-    color: "#FFFFFF",
+    color: colors[950],
     fontSize: 24,
     fontWeight: "bold",
   },

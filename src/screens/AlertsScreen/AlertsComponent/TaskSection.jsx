@@ -3,7 +3,15 @@ import { Ionicons } from "@expo/vector-icons";
 
 import TaskItem from "./TaskItem";
 
-export default function TaskSection({ icon, title, tasks }) {
+export default function TaskSection({
+  icon,
+  title,
+  tasks,
+  editMode = false,
+  onTaskPress,
+  onTaskToggle,
+  onTaskDelete,
+}) {
   return (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
@@ -17,6 +25,11 @@ export default function TaskSection({ icon, title, tasks }) {
           handle={task.handle}
           text={task.text}
           time={task.time}
+          acknowledged={task.acknowledged}
+          editMode={editMode}
+          onPress={() => onTaskPress?.(task)}
+          onToggle={() => onTaskToggle?.(task)}
+          onDelete={() => onTaskDelete?.(task)}
         />
       ))}
     </View>

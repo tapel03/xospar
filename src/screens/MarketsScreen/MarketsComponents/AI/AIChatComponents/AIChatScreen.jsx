@@ -7,11 +7,11 @@ import {
   StyleSheet,
 } from "react-native";
 
-import ChatHeader from "./AIChatComponents/ChatHeader";
-import MessageBubble from "./AIChatComponents/MessageBubble";
-import ChatInputBar from "./AIChatComponents/ChatInputBar";
+import ChatHeader from "./ChatHeader";
+import MessageBubble from "./MessageBubble";
+import ChatInputBar from "./ChatInputBar";
 
-import { useAIChat } from "../../../../hooks/useAIChat";
+import { useAIChat } from "../../../../../hooks/useAIChat";
 
 function formatTime(timestamp) {
   const date = new Date(timestamp);

@@ -25,7 +25,7 @@ export default function MarketImpactCard() {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: "#1C2630",
+    backgroundColor: "#171717",
     marginHorizontal: 16,
     marginBottom: 10,
     padding: 15,

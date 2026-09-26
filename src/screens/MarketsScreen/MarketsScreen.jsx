@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -12,14 +11,22 @@ import MarketOverview from "./MarketsComponents/MarketOverview.jsx";
 import MarketRow from "./MarketsComponents/MarketRow.jsx";
 import AssetDetailModal from "./MarketsComponents/AssetDetailModal.jsx";
 import { useWatchlist } from "../../context/WatchlistContext";
+import { colors } from "../../theme/colors";
 
 export default function MarketsScreen() {
   const [selectedAsset, setSelectedAsset] = useState(null);
 
-  // watchlistAssets is shared across the whole Markets stack, so anything
-  // bookmarked from a category detail screen (Crypto/Forex/Indices/Stocks)
-  // shows up here automatically.
   const { watchlistAssets, isBookmarked, toggleBookmark } = useWatchlist();
+
+  const selectedIndex = useMemo(
+    () =>
+      selectedAsset
+        ? watchlistAssets.findIndex(
+            (item) => item.symbol === selectedAsset.symbol
+          )
+        : -1,
+    [selectedAsset, watchlistAssets]
+  );
 
   return (
     <View style={styles.container}>
@@ -66,16 +73,20 @@ export default function MarketsScreen() {
         onToggleBookmark={() =>
           selectedAsset && toggleBookmark(selectedAsset)
         }
+        assets={watchlistAssets}
+        currentIndex={selectedIndex}
+        onNavigate={(index) => setSelectedAsset(watchlistAssets[index])}
       />
 
     </View>
   );
 }
 
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#000000",
+    backgroundColor: colors.base,
   },
 
   content: {
@@ -89,13 +100,13 @@ const styles = StyleSheet.create({
   },
 
   assetsTitle: {
-    color: "#FFFFFF",
+    color: colors[950],
     fontSize: 20,
     fontWeight: "700",
   },
 
   emptyText: {
-    color: "#8B949E",
+    color: colors[500],
     fontSize: 13,
     lineHeight: 19,
     paddingHorizontal: 16,

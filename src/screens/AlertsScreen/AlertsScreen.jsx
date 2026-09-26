@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { View, ScrollView, StyleSheet } from "react-native";
+import { View, Text, ScrollView, StyleSheet } from "react-native";
 
 import AlertHeader from "./AlertsComponent/AlertHeader";
 import DaySelector from "./AlertsComponent/DaySelector";
@@ -8,6 +8,8 @@ import BottomToolbar from "./AlertsComponent/BottomToolbar";
 import AlertFormModal from "../MarketsScreen/MarketsComponents/AlertFormModal";
 
 import { useAlerts, getPeriodForHour } from "../../context/AlertsContext";
+import { getCurrentWeekDays, toLocalDateKey } from "../../utils/weekDates";
+import { colors } from "../../theme/colors";
 
 function formatTime(hour, minute) {
   const period = hour >= 12 ? "PM" : "AM";
@@ -17,42 +19,93 @@ function formatTime(hour, minute) {
 }
 
 function toTaskShape(alert) {
+  const handleLabel = alert.symbol || alert.currency || (alert.storyTitle ? "NEWS" : "");
+
   return {
-    handle: `${alert.symbol}:`,
+    handle: handleLabel ? `${handleLabel}:` : "",
     text: `${alert.heading}${alert.targetPrice ? ` @ ${alert.targetPrice}` : ""}`,
-    time: formatTime(alert.hour, alert.minute),
+    time: alert.hasTime === false ? "Anytime" : formatTime(alert.hour, alert.minute),
     acknowledged: alert.acknowledged,
     alert,
   };
 }
 
+const TODAY_KEY = toLocalDateKey(new Date());
+
 export default function AlertsScreen() {
-  const { alerts, toggleAcknowledged } = useAlerts();
+  const { alerts, toggleAcknowledged, deleteAlert } = useAlerts();
+
+  const [selectedDay, setSelectedDay] = useState(TODAY_KEY);
+  const [formVisible, setFormVisible] = useState(false);
   const [editingAlert, setEditingAlert] = useState(null);
 
-  // Alerts created from any asset's modal land here automatically - sorted
-  // by time and grouped into Morning/Afternoon/Evening based on when each
-  // one was set for.
+  const [hideAcknowledged, setHideAcknowledged] = useState(true);
+  const [editMode, setEditMode] = useState(false);
+
+  const weekDays = useMemo(() => getCurrentWeekDays(), []);
+  const selectedDayLabel = useMemo(() => {
+    if (selectedDay === TODAY_KEY) return "Today";
+    const match = weekDays.find((day) => day.key === selectedDay);
+    return match?.label || "Today";
+  }, [selectedDay, weekDays]);
+
+  const alertsForSelectedDay = useMemo(
+    () => alerts.filter((alert) => toLocalDateKey(new Date(alert.createdAt)) === selectedDay),
+    [alerts, selectedDay]
+  );
+
+  const visibleAlertsForSelectedDay = useMemo(
+    () =>
+      hideAcknowledged
+        ? alertsForSelectedDay.filter((alert) => !alert.acknowledged)
+        : alertsForSelectedDay,
+    [alertsForSelectedDay, hideAcknowledged]
+  );
+
   const { morning, afternoon, evening } = useMemo(() => {
     const buckets = { morning: [], afternoon: [], evening: [] };
 
-    alerts
+    visibleAlertsForSelectedDay
       .slice()
-      .sort((a, b) => a.hour * 60 + a.minute - (b.hour * 60 + b.minute))
+      .sort((a, b) => (a.hour ?? 0) * 60 + (a.minute ?? 0) - ((b.hour ?? 0) * 60 + (b.minute ?? 0)))
       .forEach((alert) => {
-        buckets[getPeriodForHour(alert.hour)].push(toTaskShape(alert));
+        buckets[getPeriodForHour(alert.hour ?? 0)].push(toTaskShape(alert));
       });
 
     return buckets;
-  }, [alerts]);
+  }, [visibleAlertsForSelectedDay]);
+
+  const acknowledgedCount = useMemo(
+    () => alertsForSelectedDay.filter((alert) => alert.acknowledged).length,
+    [alertsForSelectedDay]
+  );
 
   const handleTaskPress = (task) => {
+    if (editMode) return;
     setEditingAlert(task.alert);
+    setFormVisible(true);
   };
 
   const handleTaskToggle = (task) => {
     toggleAcknowledged(task.alert.id);
   };
+
+  const handleTaskDelete = (task) => {
+    deleteAlert(task.alert.id);
+  };
+
+  const handleAddPress = () => {
+    setEditingAlert(null);
+    setFormVisible(true);
+  };
+
+  const handleFormClose = () => {
+    setFormVisible(false);
+    setEditingAlert(null);
+  };
+
+  const hasVisibleAlerts = visibleAlertsForSelectedDay.length > 0;
+  const dayLabelLower = selectedDayLabel === "Today" ? "today" : selectedDayLabel;
 
   return (
     <View style={styles.container}>
@@ -60,37 +113,70 @@ export default function AlertsScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}
       >
-        <AlertHeader />
-        <DaySelector />
+        <AlertHeader
+          dayLabel={selectedDayLabel}
+          total={alertsForSelectedDay.length}
+          acknowledged={acknowledgedCount}
+        />
+        <DaySelector selectedDay={selectedDay} onSelectDay={setSelectedDay} />
 
-        <TaskSection
-          icon="moon"
-          title="Morning"
-          tasks={morning}
-          onTaskPress={handleTaskPress}
-          onTaskToggle={handleTaskToggle}
-        />
-        <TaskSection
-          icon="sunny"
-          title="Afternoon"
-          tasks={afternoon}
-          onTaskPress={handleTaskPress}
-          onTaskToggle={handleTaskToggle}
-        />
-        <TaskSection
-          icon="moon"
-          title="Evening"
-          tasks={evening}
-          onTaskPress={handleTaskPress}
-          onTaskToggle={handleTaskToggle}
-        />
+        {hasVisibleAlerts ? (
+          <>
+            <TaskSection
+              icon="moon"
+              title="Morning"
+              tasks={morning}
+              editMode={editMode}
+              onTaskPress={handleTaskPress}
+              onTaskToggle={handleTaskToggle}
+              onTaskDelete={handleTaskDelete}
+            />
+            <TaskSection
+              icon="sunny"
+              title="Afternoon"
+              tasks={afternoon}
+              editMode={editMode}
+              onTaskPress={handleTaskPress}
+              onTaskToggle={handleTaskToggle}
+              onTaskDelete={handleTaskDelete}
+            />
+            <TaskSection
+              icon="moon"
+              title="Evening"
+              tasks={evening}
+              editMode={editMode}
+              onTaskPress={handleTaskPress}
+              onTaskToggle={handleTaskToggle}
+              onTaskDelete={handleTaskDelete}
+            />
+          </>
+        ) : (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyStateText}>
+              {alertsForSelectedDay.length === 0
+                ? `No alerts set for ${dayLabelLower}.`
+                : `All alerts for ${dayLabelLower} are acknowledged.`}
+            </Text>
+            <Text style={styles.emptyStateSubtext}>
+              {alertsForSelectedDay.length === 0
+                ? "Tap + below to create one."
+                : "Tap the checklist icon to show them again."}
+            </Text>
+          </View>
+        )}
       </ScrollView>
 
-      <BottomToolbar />
+      <BottomToolbar
+        hideAcknowledged={hideAcknowledged}
+        onToggleHideAcknowledged={() => setHideAcknowledged((v) => !v)}
+        editMode={editMode}
+        onToggleEditMode={() => setEditMode((v) => !v)}
+        onAddPress={handleAddPress}
+      />
 
       <AlertFormModal
-        visible={editingAlert !== null}
-        onClose={() => setEditingAlert(null)}
+        visible={formVisible}
+        onClose={handleFormClose}
         asset={null}
         alert={editingAlert}
       />
@@ -101,12 +187,31 @@ export default function AlertsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#000000",
+    backgroundColor: colors.base,
   },
 
   content: {
     paddingHorizontal: 20,
     paddingTop: 22,
     paddingBottom: 100,
+  },
+
+  emptyState: {
+    alignItems: "center",
+    paddingTop: 60,
+  },
+
+  emptyStateText: {
+    color: colors[500],
+    fontSize: 15,
+    fontWeight: "600",
+    marginBottom: 6,
+    textAlign: "center",
+    paddingHorizontal: 20,
+  },
+
+  emptyStateSubtext: {
+    color: colors[400],
+    fontSize: 13,
   },
 });

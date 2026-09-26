@@ -72,7 +72,7 @@ const styles = StyleSheet.create({
   },
 
   balanceCard: {
-    backgroundColor: "#101820",
+    backgroundColor: "#0A0A0A",
     borderRadius: 18,
     padding: 22,
     marginBottom: 20,
@@ -90,7 +90,7 @@ const styles = StyleSheet.create({
   },
 
   gain: {
-    color: "#4ADE80",
+    color: "#F5F5F5",
     fontSize: 16,
     fontWeight: "600",
   },
@@ -103,7 +103,7 @@ const styles = StyleSheet.create({
 
   metric: {
     width: "48%",
-    backgroundColor: "#101820",
+    backgroundColor: "#0A0A0A",
     borderRadius: 14,
     padding: 18,
     marginBottom: 14,

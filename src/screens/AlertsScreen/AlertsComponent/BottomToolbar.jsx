@@ -1,37 +1,44 @@
-import { useState } from "react";
 import { View, Pressable, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
-const TOOLS = [
-  { id: "search", icon: "search-outline" },
-  { id: "checklist", icon: "checkbox-outline" },
-  { id: "edit", icon: "create-outline" },
-  { id: "add", icon: "add" },
-];
+import { colors } from "../../../theme/colors";
 
-export default function BottomToolbar() {
-  const [active, setActive] = useState("checklist");
-
+export default function BottomToolbar({
+  hideAcknowledged,
+  onToggleHideAcknowledged,
+  editMode,
+  onToggleEditMode,
+  onAddPress,
+}) {
   return (
     <View style={styles.wrapper} pointerEvents="box-none">
       <View style={styles.toolbar}>
-        {TOOLS.map((tool) => {
-          const isActive = active === tool.id;
 
-          return (
-            <Pressable
-              key={tool.id}
-              style={[styles.toolBtn, isActive && styles.toolBtnActive]}
-              onPress={() => setActive(tool.id)}
-            >
-              <Ionicons
-                name={tool.icon}
-                size={20}
-                color={isActive ? "#000000" : "#8e8e93"}
-              />
-            </Pressable>
-          );
-        })}
+        <Pressable
+          style={[styles.toolBtn, hideAcknowledged && styles.toolBtnActive]}
+          onPress={onToggleHideAcknowledged}
+        >
+          <Ionicons
+            name="checkbox-outline"
+            size={20}
+            color={hideAcknowledged ? colors.base : colors[500]}
+          />
+        </Pressable>
+
+        <Pressable
+          style={[styles.toolBtn, editMode && styles.toolBtnActive]}
+          onPress={onToggleEditMode}
+        >
+          <Ionicons
+            name="create-outline"
+            size={20}
+            color={editMode ? colors.base : colors[500]}
+          />
+        </Pressable>
+
+        <Pressable style={styles.toolBtn} onPress={onAddPress}>
+          <Ionicons name="add" size={22} color={colors[500]} />
+        </Pressable>
       </View>
     </View>
   );
@@ -50,10 +57,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    backgroundColor: "#1c1c1e",
+    backgroundColor: colors[100],
     borderRadius: 30,
     padding: 8,
-    shadowColor: "#000000",
+    shadowColor: colors.base,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.5,
     shadowRadius: 24,
@@ -70,6 +77,6 @@ const styles = StyleSheet.create({
   },
 
   toolBtnActive: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors[950],
   },
 });

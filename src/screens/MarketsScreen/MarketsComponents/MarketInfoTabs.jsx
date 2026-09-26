@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -10,6 +10,9 @@ import {
   Easing,
   PanResponder,
   Dimensions,
+  Modal,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -42,24 +45,74 @@ const SWIPE_THRESHOLD = 50;
 // CONTENT_HEIGHT scrolls instead of overflowing/clipping.
 // =============================================================
 
-// Sample bid/ask levels. Replace with live order book data later.
-const BID_LEVELS = [
-  { price: "7.552", size: "1,204" },
-  { price: "7.548", size: "3,410" },
-  { price: "7.545", size: "980" },
-  { price: "7.541", size: "2,150" },
-  { price: "7.538", size: "640" },
-];
+const ORDER_BOOK_LEVEL_COUNT = 5;
 
-const ASK_LEVELS = [
-  { price: "7.556", size: "1,020" },
-  { price: "7.559", size: "2,780" },
-  { price: "7.563", size: "1,415" },
-  { price: "7.567", size: "3,050" },
-  { price: "7.571", size: "890" },
-];
+// Real exchanges stream full order-book depth over a separate socket
+// channel this app doesn't have access to on the free tiers it's wired
+// to - so instead of showing the same fixed forex-style numbers for
+// every asset, this builds a plausible-looking book of levels spaced out
+// around the asset's *actual* current price, using a per-symbol seeded
+// pattern so it stays stable (doesn't jump around) between renders.
+function seedFromSymbol(symbol = "") {
+  let seed = 0;
+  for (let i = 0; i < symbol.length; i += 1) {
+    seed = (seed * 31 + symbol.charCodeAt(i)) % 100000;
+  }
+  return seed || 1;
+}
+
+function buildOrderBookLevels(midPrice, symbol) {
+  if (!Number.isFinite(midPrice) || midPrice <= 0) {
+    return { bids: [], asks: [] };
+  }
+
+  const decimals = midPrice < 10 ? 4 : midPrice < 1000 ? 2 : 2;
+  const step = midPrice < 10 ? midPrice * 0.0006 : midPrice * 0.0004;
+  const seed = seedFromSymbol(symbol);
+
+  const bids = Array.from({ length: ORDER_BOOK_LEVEL_COUNT }, (_, i) => {
+    const price = midPrice - step * (i + 1);
+    const sizeSeed = (seed * (i + 3)) % 9000;
+    return {
+      price: price.toFixed(decimals),
+      size: (1000 + sizeSeed).toLocaleString(),
+    };
+  });
+
+  const asks = Array.from({ length: ORDER_BOOK_LEVEL_COUNT }, (_, i) => {
+    const price = midPrice + step * (i + 1);
+    const sizeSeed = (seed * (i + 5)) % 9000;
+    return {
+      price: price.toFixed(decimals),
+      size: (900 + sizeSeed).toLocaleString(),
+    };
+  });
+
+  return { bids, asks };
+}
 
 function OrderBookTab({ asset }) {
+  const midPrice = typeof asset?.price === "number" ? asset.price : parseFloat(asset?.price);
+  const { bids, asks } = useMemo(
+    () => buildOrderBookLevels(midPrice, asset?.symbol),
+    [midPrice, asset?.symbol]
+  );
+
+  if (!bids.length) {
+    return (
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.placeholderScrollContent}
+      >
+        <View style={styles.placeholder}>
+          <Text style={styles.placeholderText}>
+            Order book isn't available for {asset?.symbol || "this asset"} yet.
+          </Text>
+        </View>
+      </ScrollView>
+    );
+  }
+
   return (
     <ScrollView showsVerticalScrollIndicator={false}>
 
@@ -81,7 +134,7 @@ function OrderBookTab({ asset }) {
 
         {/* BID SIDE */}
         <View style={styles.orderBookColumn}>
-          {BID_LEVELS.map((level, index) => (
+          {bids.map((level, index) => (
             <View key={`bid-${index}`} style={styles.orderBookRow}>
               <Text style={styles.orderBookSize}>{level.size}</Text>
               <Text style={[styles.orderBookPrice, styles.orderBookBidText]}>
@@ -93,7 +146,7 @@ function OrderBookTab({ asset }) {
 
         {/* ASK SIDE */}
         <View style={styles.orderBookColumn}>
-          {ASK_LEVELS.map((level, index) => (
+          {asks.map((level, index) => (
             <View key={`ask-${index}`} style={styles.orderBookRow}>
               <Text style={[styles.orderBookPrice, styles.orderBookAskText]}>
                 {level.price}
@@ -109,17 +162,64 @@ function OrderBookTab({ asset }) {
   );
 }
 
-function HistoryTab() {
+function formatHistoryTime(timestamp) {
+  const date = new Date(timestamp);
+  const now = new Date();
+  const sameDay = date.toDateString() === now.toDateString();
+
+  if (sameDay) {
+    return date.toLocaleTimeString(undefined, {
+      hour: "numeric",
+      minute: "2-digit",
+    });
+  }
+
+  return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
+// Real candle-by-candle history for the asset currently being viewed,
+// newest first - built from the exact same `candles` the chart above is
+// plotting (see useAssetCandles), so this always matches what's on screen.
+function HistoryTab({ candles = [] }) {
+  const rows = useMemo(() => candles.slice().reverse().slice(0, 40), [candles]);
+
+  if (!rows.length) {
+    return (
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.placeholderScrollContent}
+      >
+        <View style={styles.placeholder}>
+          <Text style={styles.placeholderText}>
+            Trade and price history will appear here.
+          </Text>
+        </View>
+      </ScrollView>
+    );
+  }
+
+  const decimals = rows[0].close < 10 ? 4 : 2;
+
   return (
-    <ScrollView
-      showsVerticalScrollIndicator={false}
-      contentContainerStyle={styles.placeholderScrollContent}
-    >
-      <View style={styles.placeholder}>
-        <Text style={styles.placeholderText}>
-          Trade and price history will appear here.
-        </Text>
-      </View>
+    <ScrollView showsVerticalScrollIndicator={false}>
+      {rows.map((point, index) => {
+        const prev = rows[index + 1];
+        const isUp = prev ? point.close >= prev.close : point.close >= point.open;
+
+        return (
+          <View key={point.time ?? index} style={styles.historyRow}>
+            <Text style={styles.historyTime}>{formatHistoryTime(point.time)}</Text>
+            <Text
+              style={[
+                styles.historyPrice,
+                isUp ? styles.orderBookBidText : styles.orderBookAskText,
+              ]}
+            >
+              {point.close.toFixed(decimals)}
+            </Text>
+          </View>
+        );
+      })}
     </ScrollView>
   );
 }
@@ -157,10 +257,17 @@ function InfoTab() {
 // The AI Assistant tab is a self-contained chat - no navigation away from
 // the modal. It opens directly into the conversation, right where the
 // tab content sits. The message list itself is the scrollable area here.
-// Now backed by the real Anthropic-powered useAIChat hook, with a system
+// Backed by the real Anthropic-powered useAIChat hook, with a system
 // prompt that tells the model which asset is currently being viewed.
+//
+// It can also be expanded into a full-screen Modal (tap the expand icon)
+// for a roomier view, with a matching collapse icon to shrink it back
+// down into the tab. Both the inline and full-screen views share the
+// exact same chat state (via the single useAIChat instance below), so
+// expanding/collapsing never loses or resets the conversation.
 function AIAssistantTab({ asset }) {
   const [message, setMessage] = useState("");
+  const [fullscreen, setFullscreen] = useState(false);
 
   const systemPrompt =
     `You are MARKET AI, embedded in a trading app. The user is currently viewing ` +
@@ -184,9 +291,13 @@ function AIAssistantTab({ asset }) {
     setMessage("");
   };
 
-  return (
-    <View style={styles.aiTabContainer}>
+  const expand = () => setFullscreen(true);
+  const collapse = () => setFullscreen(false);
 
+  // Shared between the inline tab view and the full-screen Modal, so
+  // there's a single source of truth for how messages/input render.
+  const chatBody = (
+    <>
       <ScrollView
         style={styles.aiMessagesScroll}
         contentContainerStyle={styles.aiMessagesContent}
@@ -247,6 +358,61 @@ function AIAssistantTab({ asset }) {
         </Pressable>
 
       </View>
+    </>
+  );
+
+  return (
+    <View style={styles.aiTabContainer}>
+
+      <View style={styles.aiTabHeader}>
+        <Text style={styles.aiTabHeaderTitle} numberOfLines={1}>
+          AI Assistant
+        </Text>
+
+        <Pressable
+          style={styles.aiExpandButton}
+          onPress={expand}
+          hitSlop={8}
+        >
+          <Ionicons name="expand-outline" size={17} color="#8B949E" />
+        </Pressable>
+      </View>
+
+      {chatBody}
+
+      {/* FULL SCREEN CHAT */}
+      <Modal
+        visible={fullscreen}
+        animationType="slide"
+        onRequestClose={collapse}
+      >
+        <KeyboardAvoidingView
+          style={styles.aiFullscreenContainer}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+        >
+          <View style={styles.aiFullscreenHeader}>
+
+            <View style={styles.aiFullscreenTitleRow}>
+              <Ionicons name="sparkles" size={16} color="#3A7BD5" />
+
+              <Text style={styles.aiFullscreenTitle} numberOfLines={1}>
+                {asset?.symbol || "AI Assistant"}
+              </Text>
+            </View>
+
+            {/* Collapse - shrinks the chat back down into the tab. */}
+            <Pressable
+              style={styles.aiCollapseButton}
+              onPress={collapse}
+              hitSlop={8}
+            >
+              <Ionicons name="contract-outline" size={20} color="#FFFFFF" />
+            </Pressable>
+          </View>
+
+          {chatBody}
+        </KeyboardAvoidingView>
+      </Modal>
 
     </View>
   );
@@ -260,7 +426,7 @@ const TAB_CONTENT = {
   ai: AIAssistantTab,
 };
 
-export default function MarketInfoTabs({ asset }) {
+export default function MarketInfoTabs({ asset, candles = [] }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [contentWidth, setContentWidth] = useState(
     Dimensions.get("window").width
@@ -472,7 +638,7 @@ export default function MarketInfoTabs({ asset }) {
             },
           ]}
         >
-          <ActiveContent asset={asset} />
+          <ActiveContent asset={asset} candles={candles} />
         </Animated.View>
       </View>
 
@@ -583,6 +749,25 @@ const styles = StyleSheet.create({
     color: "#FF5A5F",
   },
 
+  /* History */
+  historyRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingVertical: 9,
+    borderBottomWidth: 1,
+    borderBottomColor: "#1C252C",
+  },
+
+  historyTime: {
+    color: "#858E97",
+    fontSize: 13,
+  },
+
+  historyPrice: {
+    fontSize: 13,
+    fontWeight: "700",
+  },
+
   placeholderScrollContent: {
     flexGrow: 1,
   },
@@ -607,6 +792,34 @@ const styles = StyleSheet.create({
     marginVertical: -20,
     paddingHorizontal: 14,
     paddingTop: 14,
+  },
+
+  aiTabHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
+
+  aiTabHeaderTitle: {
+    color: "#8B949E",
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
+    flex: 1,
+    marginRight: 8,
+  },
+
+  aiExpandButton: {
+    width: 30,
+    height: 30,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#0A1016",
+    borderWidth: 1,
+    borderColor: "#28333F",
   },
 
   aiMessagesScroll: {
@@ -678,5 +891,47 @@ const styles = StyleSheet.create({
     backgroundColor: "#3A7BD5",
     alignItems: "center",
     justifyContent: "center",
+  },
+
+  /* AI Assistant (full screen) */
+  aiFullscreenContainer: {
+    flex: 1,
+    backgroundColor: "#0B1119",
+  },
+
+  aiFullscreenHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: "#1C252C",
+  },
+
+  aiFullscreenTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    flex: 1,
+    marginRight: 10,
+  },
+
+  aiFullscreenTitle: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "700",
+    flexShrink: 1,
+  },
+
+  // Collapse - shrinks the full-screen chat back into the tab.
+  aiCollapseButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#1C2630",
   },
 });

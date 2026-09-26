@@ -1,13 +1,8 @@
-import {
-  View,
-  Text,
-  Pressable,
-  StyleSheet,
-} from "react-native";
-
+import { View, Text, Pressable, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
 import BookmarkButton from "./BookmarkButton";
+import { colors } from "../../../theme/colors";
 
 export default function MarketRow({
   asset,
@@ -24,7 +19,6 @@ export default function MarketRow({
       onPress={onPress}
     >
       <View style={styles.left}>
-
         <BookmarkButton
           bookmarked={bookmarked}
           onPress={onToggleBookmark}
@@ -64,9 +58,7 @@ export default function MarketRow({
           style={[
             styles.change,
             {
-              color: asset.positive
-                ? "#4ADE80"
-                : "#FF5A5F",
+              color: asset.positive ? "#4ADE80" : "#FF5A5F",
             },
           ]}
         >
@@ -78,7 +70,7 @@ export default function MarketRow({
       <Ionicons
         name="chevron-forward"
         size={17}
-        color="#59636D"
+        color={colors[500]}
       />
     </Pressable>
   );
@@ -93,7 +85,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     borderBottomWidth: 1,
-    borderBottomColor: "#1C252C",
+    borderBottomColor: colors[200],
   },
 
   pressed: {
@@ -110,32 +102,32 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 22,
-    backgroundColor: "#27313B",
+    backgroundColor: colors[200],
     justifyContent: "center",
     alignItems: "center",
     marginRight: 10,
   },
 
   iconText: {
-    color: "#FFFFFF",
+    color: colors[950],
     fontSize: 17,
     fontWeight: "700",
   },
 
   name: {
-    color: "#FFFFFF",
+    color: colors[950],
     fontSize: 14,
     fontWeight: "700",
   },
 
   pair: {
-    color: "#777F84",
+    color: colors[500],
     fontSize: 10,
     marginTop: 2,
   },
 
   allocation: {
-    color: "#858E97",
+    color: colors[500],
     fontSize: 9,
     marginTop: 2,
   },
@@ -146,7 +138,7 @@ const styles = StyleSheet.create({
   },
 
   price: {
-    color: "#FFFFFF",
+    color: colors[950],
     fontSize: 13,
     fontWeight: "600",
   },

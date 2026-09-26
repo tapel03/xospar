@@ -29,7 +29,7 @@ export default function Profile() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#101820",
+    backgroundColor: "#0A0A0A",
     alignItems: "center",
     paddingTop: 40,
     paddingHorizontal: 20,
@@ -39,7 +39,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: "#1C2630",
+    backgroundColor: "#171717",
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 16,
@@ -72,7 +72,7 @@ const styles = StyleSheet.create({
   },
 
   logoutText: {
-    color: "#FF5A5F",
+    color: "#8A8A8A",
     fontSize: 15,
     fontWeight: "700",
   },

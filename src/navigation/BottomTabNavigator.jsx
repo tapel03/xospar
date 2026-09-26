@@ -6,6 +6,7 @@ import MarketsNavigator from "./MarketsNavigator";
 import AlertsScreen from "../screens/AlertsScreen/AlertsScreen";
 import CalendarNavigator from "./CalendarNavigator";
 import MoreNavigator from "./MoreNavigator";
+import { colors } from "../theme/colors";
 
 const Tab = createBottomTabNavigator();
 
@@ -20,12 +21,12 @@ export default function BottomTabNavigator() {
           height: 70,
           paddingBottom: 8,
           paddingTop: 8,
-          backgroundColor: "#000000",
-          borderTopColor: "#000000",
+          backgroundColor: colors.base,
+          borderTopColor: colors.base,
         },
 
-        tabBarActiveTintColor: "#FFFFFF",
-        tabBarInactiveTintColor: "#AAAAAA",
+        tabBarActiveTintColor: colors[950],
+        tabBarInactiveTintColor: colors[500],
 
         tabBarIcon: ({ focused, color }) => {
           let iconName;

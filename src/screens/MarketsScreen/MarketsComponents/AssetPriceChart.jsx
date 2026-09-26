@@ -1,25 +1,67 @@
 import { Fragment, useMemo } from "react";
-import { View } from "react-native";
+import { View, Text, StyleSheet } from "react-native";
 import Svg, { Line, Polyline, Rect, Text as SvgText } from "react-native-svg";
 
 const CHART_HEIGHT = 260;
 const PADDING = { top: 10, bottom: 10, left: 8, right: 46 };
+const TIME_LABELS_HEIGHT = 20;
+
+const MONTHS_SHORT = [
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+];
+
+// "fine" -> just the clock time (used for intraday timeframes like
+// 1m/5m/1h/4h). "coarse" -> date + time (used for 1D/1W/1M-style
+// ranges), e.g. "14 Sep 00:00", matching how most trading platforms
+// label longer ranges along the bottom axis.
+function formatAxisTime(timestamp, granularity = "coarse") {
+  if (!timestamp) {
+    return "";
+  }
+
+  const date = new Date(timestamp);
+  const hh = String(date.getHours()).padStart(2, "0");
+  const mm = String(date.getMinutes()).padStart(2, "0");
+
+  if (granularity === "fine") {
+    return `${hh}:${mm}`;
+  }
+
+  return `${date.getDate()} ${MONTHS_SHORT[date.getMonth()]} ${hh}:${mm}`;
+}
 
 /**
  * Renders a line or candlestick chart from an array of
  * { time, open, high, low, close } points. Purely presentational - all
  * data fetching lives in useAssetCandles.
  */
-export default function AssetPriceChart({ candles = [], mode = "line", width = 300 }) {
-  const { minPrice, maxPrice } = useMemo(() => {
+export default function AssetPriceChart({
+  candles = [],
+  mode = "line",
+  width = 300,
+  pricePrefix = "",
+  showRangeLabels = true,
+  showTimeLabels = false,
+  timeGranularity = "coarse",
+}) {
+  const { minPrice, maxPrice, minIndex, maxIndex } = useMemo(() => {
     if (!candles.length) {
-      return { minPrice: 0, maxPrice: 0 };
+      return { minPrice: 0, maxPrice: 0, minIndex: 0, maxIndex: 0 };
     }
 
     const highs = candles.map((c) => c.high ?? c.close);
     const lows = candles.map((c) => c.low ?? c.close);
 
-    return { minPrice: Math.min(...lows), maxPrice: Math.max(...highs) };
+    const low = Math.min(...lows);
+    const high = Math.max(...highs);
+
+    return {
+      minPrice: low,
+      maxPrice: high,
+      minIndex: lows.indexOf(low),
+      maxIndex: highs.indexOf(high),
+    };
   }, [candles]);
 
   if (!candles.length || width <= 0) {
@@ -43,7 +85,29 @@ export default function AssetPriceChart({ candles = [], mode = "line", width = 3
   const gridFractions = [0, 0.25, 0.5, 0.75, 1];
   const decimals = maxPrice < 10 ? 4 : 2;
 
+  const highLabelX = xFor(maxIndex);
+  const highLabelY = yFor(maxPrice);
+  const lowLabelX = xFor(minIndex);
+  const lowLabelY = yFor(minPrice);
+
+  // Flip the label to the opposite side of its marker whenever it would
+  // otherwise run off the left/right edge of the chart.
+  const highLabelAlignRight = highLabelX > width / 2;
+  const lowLabelAlignRight = lowLabelX > width / 2;
+
+  // Up to 5 evenly spaced time labels along the bottom edge, formatted
+  // according to `timeGranularity` (see formatAxisTime above) - mirrors
+  // the "right side = price, bottom side = time" layout of standard
+  // trading-platform charts.
+  const xLabelCount = showTimeLabels ? Math.min(5, candles.length) : 0;
+  const xLabelIndexes = Array.from({ length: xLabelCount }, (_, i) =>
+    Math.round((i / Math.max(xLabelCount - 1, 1)) * (candles.length - 1))
+  );
+
+  const totalHeight = CHART_HEIGHT + (showTimeLabels ? TIME_LABELS_HEIGHT : 0);
+
   return (
+    <View style={{ width, height: totalHeight }}>
     <Svg width={width} height={CHART_HEIGHT}>
       {gridFractions.map((fraction) => {
         const y = PADDING.top + fraction * innerHeight;
@@ -106,5 +170,79 @@ export default function AssetPriceChart({ candles = [], mode = "line", width = 3
         })
       )}
     </Svg>
+
+      {showRangeLabels && (
+        <>
+          <Text
+            style={[
+              styles.rangeLabel,
+              styles.highLabel,
+              {
+                top: Math.max(highLabelY - 22, 0),
+                [highLabelAlignRight ? "right" : "left"]:
+                  highLabelAlignRight
+                    ? width - highLabelX + 8
+                    : highLabelX + 8,
+              },
+            ]}
+          >
+            {pricePrefix}
+            {maxPrice.toFixed(decimals)}
+          </Text>
+
+          <Text
+            style={[
+              styles.rangeLabel,
+              styles.lowLabel,
+              {
+                top: Math.min(lowLabelY + 8, CHART_HEIGHT - 18),
+                [lowLabelAlignRight ? "right" : "left"]:
+                  lowLabelAlignRight ? width - lowLabelX + 8 : lowLabelX + 8,
+              },
+            ]}
+          >
+            {pricePrefix}
+            {minPrice.toFixed(decimals)}
+          </Text>
+        </>
+      )}
+
+      {showTimeLabels && xLabelIndexes.length > 0 && (
+        <View style={styles.xLabelsRow}>
+          {xLabelIndexes.map((index, i) => (
+            <Text key={`${index}-${i}`} style={styles.xLabel}>
+              {formatAxisTime(candles[index]?.time, timeGranularity)}
+            </Text>
+          ))}
+        </View>
+      )}
+    </View>
   );
 }
+
+
+const styles = StyleSheet.create({
+  rangeLabel: {
+    position: "absolute",
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#D5D9DF",
+  },
+
+  highLabel: {},
+
+  lowLabel: {},
+
+  xLabelsRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingHorizontal: 4,
+    marginTop: 4,
+  },
+
+  xLabel: {
+    color: "#8B949E",
+    fontSize: 10,
+    fontWeight: "500",
+  },
+});

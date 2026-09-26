@@ -1,13 +1,18 @@
-
 import { View, Text, StyleSheet, Pressable } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 
-const GRID_ITEMS = Array.from({ length: 120 }, (_, index) => index);
+import { colors } from "../../../theme/colors";
+
+const CATEGORIES = [
+  { name: "Crypto", icon: "folder" },
+  { name: "Forex", icon: "folder" },
+  { name: "Indices", icon: "folder" },
+  { name: "Stocks", icon: "folder" },
+];
 
 export default function MarketOverview() {
   const navigation = useNavigation();
 
-  // Opens the detail page for the selected market category.
   const openCategory = (category) => {
     navigation.navigate("MarketCategoryDetail", {
       category,
@@ -16,146 +21,115 @@ export default function MarketOverview() {
 
   return (
     <View style={styles.container}>
-
-      {/* =========================
-          MARKET CATEGORIES
-      ========================== */}
       <View style={styles.categoryGrid}>
+        {CATEGORIES.map((category) => (
+          <Pressable
+            key={category.name}
+            style={({ pressed }) => [
+              styles.folderItem,
+              pressed && styles.folderPressed,
+            ]}
+            onPress={() => openCategory(category.name)}
+          >
+            <View style={styles.folder}>
+              <View style={styles.folderTab} />
 
-        <Pressable
-          style={({ pressed }) => [
-            styles.categoryCard,
-            pressed && styles.categoryPressed,
-          ]}
-          onPress={() => openCategory("Crypto")}
-        >
-          <Text style={styles.categoryIcon}>▣</Text>
-          <Text style={styles.categoryName}>Crypto</Text>
-          <Text style={styles.categoryPositive}>+20.3%</Text>
-        </Pressable>
+              <View style={styles.folderBody}>
+                <Text style={styles.folderSymbol}>
+                  {category.name.charAt(0)}
+                </Text>
+              </View>
+            </View>
 
-
-        <Pressable
-          style={({ pressed }) => [
-            styles.categoryCard,
-            pressed && styles.categoryPressed,
-          ]}
-          onPress={() => openCategory("Forex")}
-        >
-          <Text style={styles.categoryIcon}>◇</Text>
-          <Text style={styles.categoryName}>Forex</Text>
-          <Text style={styles.categoryPositive}>+4.1%</Text>
-        </Pressable>
-
-
-        <Pressable
-          style={({ pressed }) => [
-            styles.categoryCard,
-            pressed && styles.categoryPressed,
-          ]}
-          onPress={() => openCategory("Indices")}
-        >
-          <Text style={styles.categoryIcon}>▧</Text>
-          <Text style={styles.categoryName}>Indices</Text>
-          <Text style={styles.categoryNegative}>-14.1%</Text>
-        </Pressable>
-
-
-        <Pressable
-          style={({ pressed }) => [
-            styles.categoryCard,
-            pressed && styles.categoryPressed,
-          ]}
-          onPress={() => openCategory("Stocks")}
-        >
-          <Text style={styles.categoryIcon}>♧</Text>
-          <Text style={styles.categoryName}>Stocks</Text>
-          <Text style={styles.categoryNegative}>-32.1%</Text>
-        </Pressable>
-
+            <Text style={styles.categoryName}>
+              {category.name}
+            </Text>
+          </Pressable>
+        ))}
       </View>
-
     </View>
   );
 }
 
+
 const styles = StyleSheet.create({
   container: {
     width: "100%",
-    backgroundColor: "#000000",
+    backgroundColor: colors.base,
     paddingHorizontal: 16,
-    paddingTop: 8,
-  },
-
-  grid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    marginTop: 12,
-    paddingHorizontal: 3,
-  },
-
-  gridBlock: {
-    width: "4%",
-    height: 20,
-    marginRight: "0.4%",
-    marginBottom: 3,
-    backgroundColor: "#35404B",
-  },
-
-  brightBlock: {
-    backgroundColor: "#B9C0C7",
-  },
-
-  mediumBlock: {
-    backgroundColor: "#737D87",
+    paddingTop: 12,
   },
 
   categoryGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "space-between",
-    marginTop: 14,
+    marginTop: 10,
   },
 
-  categoryCard: {
-    width: "48.5%",
+  folderItem: {
+    width: "23%",
+    alignItems: "center",
+    marginBottom: 20,
+  },
+
+  folderPressed: {
+    opacity: 0.55,
+    transform: [{ scale: 0.96 }],
+  },
+
+  folder: {
+    width: 72,
+    height: 55,
+    position: "relative",
+  },
+
+  folderTab: {
+    position: "absolute",
+    left: 3,
+    top: 0,
+    width: 27,
+    height: 13,
+    backgroundColor: colors[400],
+    borderTopLeftRadius: 7,
+    borderTopRightRadius: 7,
+  },
+
+  folderBody: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
     height: 48,
-    borderWidth: 1,
-    borderColor: "#263441",
-    borderRadius: 9,
-    backgroundColor: "#080E15",
-    marginBottom: 8,
-    paddingHorizontal: 10,
-    flexDirection: "row",
+    backgroundColor: colors[600],
+    borderRadius: 6,
+
+    borderTopWidth: 2,
+    borderTopColor: colors[400],
+
+    shadowColor: colors.base,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.35,
+    shadowRadius: 4,
+
+    elevation: 4,
+
+    justifyContent: "center",
     alignItems: "center",
   },
 
-  categoryPressed: {
-    opacity: 0.7,
-  },
-
-  categoryIcon: {
-    color: "#FFFFFF",
-    fontSize: 18,
-    marginRight: 9,
+  folderSymbol: {
+    color: colors[200],
+    fontSize: 16,
+    fontWeight: "700",
+    opacity: 0.8,
   },
 
   categoryName: {
-    color: "#FFFFFF",
-    fontSize: 13,
-    fontWeight: "500",
-    flex: 1,
-  },
-
-  categoryPositive: {
-    color: "#39E6C0",
-    fontSize: 11,
-    fontWeight: "700",
-  },
-
-  categoryNegative: {
-    color: "#FF4D67",
-    fontSize: 11,
-    fontWeight: "700",
+    color: colors[950],
+    fontSize: 12,
+    fontWeight: "600",
+    marginTop: 7,
+    textAlign: "center",
   },
 });

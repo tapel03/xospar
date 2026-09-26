@@ -1,6 +1,8 @@
 import { View, Text, Pressable, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
+import { colors } from "../../../../theme/colors";
+
 export default function SettingsItem({ icon = "settings-outline", label, onPress }) {
   return (
     <Pressable
@@ -8,10 +10,10 @@ export default function SettingsItem({ icon = "settings-outline", label, onPress
       onPress={onPress}
     >
       <View style={styles.left}>
-        <Ionicons name={icon} size={20} color="#FFFFFF" style={styles.icon} />
+        <Ionicons name={icon} size={20} color={colors[950]} style={styles.icon} />
         <Text style={styles.label}>{label}</Text>
       </View>
-      <Ionicons name="chevron-forward" size={18} color="#666666" />
+      <Ionicons name="chevron-forward" size={18} color={colors[500]} />
     </Pressable>
   );
 }
@@ -24,11 +26,11 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 20,
     borderBottomWidth: 1,
-    borderBottomColor: "#1C2630",
+    borderBottomColor: colors[200],
   },
 
   pressed: {
-    backgroundColor: "#1C2630",
+    backgroundColor: colors[200],
   },
 
   left: {
@@ -41,7 +43,7 @@ const styles = StyleSheet.create({
   },
 
   label: {
-    color: "#FFFFFF",
+    color: colors[950],
     fontSize: 16,
   },
 });

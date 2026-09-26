@@ -1,93 +1,120 @@
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, StyleSheet, Pressable } from "react-native";
 
-const EVENTS = [
-  {
-    title: "Fed Rate Decision",
-    date: "May 19, 2024 2:00 PM",
-    impact: "High Impact",
-    markets: [
-      { symbol: "EUR/USD", change: "+0.42%" },
-      { symbol: "Gold (XAU/USD)", change: "+0.91%" },
-      { symbol: "S&P 500", change: "+1.24%" },
-    ],
-  },
-  {
-    title: "US CPI Report",
-    date: "May 15, 2024 8:30 AM",
-    impact: "High Impact",
-    markets: [
-      { symbol: "EUR/USD", change: "-0.38%" },
-      { symbol: "USD/JPY", change: "-0.65%" },
-      { symbol: "Gold (XAU/USD)", change: "+0.31%" },
-    ],
-  },
-  {
-    title: "Retail Sales Data",
-    date: "May 14, 2024 8:30 AM",
-    impact: "Medium Impact",
-    markets: [
-      { symbol: "GBP/USD", change: "+0.21%" },
-      { symbol: "USD/JPY", change: "+0.18%" },
-      { symbol: "S&P 500", change: "+0.35%" },
-    ],
-  },
-];
+function getImpactColor(impact) {
+  if (impact === "High") {
+    return "#FF5A5F";
+  }
 
-export default function RecentMarketImpact() {
+  if (impact === "Medium") {
+    return "#FFC857";
+  }
+
+  return "#8E8E93";
+}
+
+function getReportLine(story) {
+  if (!story) {
+    return "Markets may react as traders reassess the latest developments.";
+  }
+
+  return story.description;
+}
+
+export default function RecentMarketImpact({
+  navigation,
+  stories = [],
+}) {
+  const events = stories
+    .filter((story) => story.impact !== "Low")
+    .slice(0, 3);
+
   return (
     <View style={styles.card}>
+      <View style={styles.headerRow}>
+        <View>
+          <Text style={styles.sectionTitle}>
+            Recent Market Impact
+          </Text>
 
-      <Text style={styles.sectionTitle}>Recent Market Impact</Text>
+          <Text style={styles.subtitle}>
+            Latest developments with potential market impact
+          </Text>
+        </View>
+      </View>
 
-      {EVENTS.map((event) => (
-        <View key={event.title} style={styles.eventCard}>
+      {events.length === 0 ? (
+        <Text style={styles.emptyText}>
+          No major market-moving developments detected.
+        </Text>
+      ) : (
+        events.map((event) => {
+          const impactColor = getImpactColor(event.impact);
 
-          <View style={styles.topRow}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.title}>{event.title}</Text>
-              <Text style={styles.date}>{event.date}</Text>
-            </View>
+          return (
+            <View key={event.id} style={styles.eventRow}>
+              <View style={styles.eventTopRow}>
+                <View style={styles.eventTitleContainer}>
+                  <Text
+                    style={styles.title}
+                    numberOfLines={2}
+                  >
+                    {event.title}
+                  </Text>
 
-            <View
-              style={[
-                styles.badge,
-                {
-                  backgroundColor:
-                    event.impact === "High Impact"
-                      ? "#3B1F20"
-                      : "#2E2A18",
-                },
-              ]}
-            >
+                  <Text style={styles.meta} numberOfLines={1}>
+                    {event.source} • {event.time}
+                  </Text>
+                </View>
+
+                <View
+                  style={[
+                    styles.badge,
+                    {
+                      backgroundColor: `${impactColor}22`,
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.badgeText,
+                      {
+                        color: impactColor,
+                      },
+                    ]}
+                  >
+                    {event.impact}
+                  </Text>
+                </View>
+              </View>
+
               <Text
-                style={[
-                  styles.badgeText,
-                  {
-                    color:
-                      event.impact === "High Impact"
-                        ? "#FF5A5F"
-                        : "#FFC857",
-                  },
-                ]}
+                style={styles.report}
+                numberOfLines={2}
               >
-                {event.impact}
+                {getReportLine(event)}
+              </Text>
+
+              <Text
+                style={styles.markets}
+                numberOfLines={1}
+              >
+                Markets: {event.markets.join(" • ")}
               </Text>
             </View>
-          </View>
+          );
+        })
+      )}
 
-          {event.markets.map((market) => (
-            <View key={market.symbol} style={styles.marketRow}>
-              <Text style={styles.symbol}>{market.symbol}</Text>
-
-              <Text style={styles.change}>{market.change}</Text>
-            </View>
-          ))}
-
-        </View>
-      ))}
-
-      <Text style={styles.viewAll}>View All Events →</Text>
-
+      <Pressable
+        style={styles.viewAllButton}
+        onPress={() =>
+          navigation.getParent()?.navigate("Calendar")
+        }
+      >
+        <Text style={styles.viewAllText}>
+          View All Events →
+        </Text>
+      </Pressable>
     </View>
   );
 }
@@ -101,42 +128,57 @@ const styles = StyleSheet.create({
     borderColor: "#1C2630",
   },
 
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+  },
+
   sectionTitle: {
     color: "#FFFFFF",
     fontSize: 16,
     fontWeight: "700",
-    marginBottom: 14,
+    marginBottom: 3,
   },
 
-  eventCard: {
-    paddingVertical: 14,
+  subtitle: {
+    color: "#737C86",
+    fontSize: 11,
+  },
+
+  eventRow: {
+    paddingVertical: 13,
     borderBottomWidth: 1,
     borderBottomColor: "#1C2630",
   },
 
-  topRow: {
+  eventTopRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "flex-start",
-    marginBottom: 10,
+  },
+
+  eventTitleContainer: {
+    flex: 1,
+    paddingRight: 10,
   },
 
   title: {
     color: "#FFFFFF",
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: "600",
+    lineHeight: 19,
   },
 
-  date: {
-    color: "#888888",
-    fontSize: 11,
+  meta: {
+    color: "#737C86",
+    fontSize: 10,
     marginTop: 4,
   },
 
   badge: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 10,
   },
 
   badgeText: {
@@ -144,26 +186,32 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
 
-  marketRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+  report: {
+    color: "#AEB5BD",
+    fontSize: 12,
+    lineHeight: 18,
     marginTop: 8,
   },
 
-  symbol: {
-    color: "#CFCFCF",
-    fontSize: 13,
+  markets: {
+    color: "#7D8691",
+    fontSize: 10,
+    marginTop: 7,
   },
 
-  change: {
-    color: "#4ADE80",
-    fontWeight: "700",
-    fontSize: 13,
+  viewAllButton: {
+    paddingTop: 13,
   },
 
-  viewAll: {
+  viewAllText: {
     color: "#3A7BD5",
-    marginTop: 18,
     fontWeight: "600",
+  },
+
+  emptyText: {
+    color: "#7D8691",
+    fontSize: 12,
+    lineHeight: 18,
+    paddingVertical: 16,
   },
 });
