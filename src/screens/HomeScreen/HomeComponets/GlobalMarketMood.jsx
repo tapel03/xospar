@@ -12,18 +12,20 @@ import { Ionicons } from "@expo/vector-icons";
 
 import { colors } from "../../../theme/colors";
 
+// Confidence is black now (was blue) to keep the palette monochrome.
+// Fear / Uncertainty / Risk keep their red / orange / green meaning.
 const DEFAULT_METRICS = [
-  { label: "Fear", value: 78, color: "#F0445A" },
+  { label: "Fear", value: 78, color: "#E5484D" },
   { label: "Uncertainty", value: 65, color: "#F29A52" },
-  { label: "Risk", value: 32, color: "#22C55E" },
-  { label: "Confidence", value: 18, color: "#3B82F6" },
+  { label: "Risk", value: 32, color: "#22A06B" },
+  { label: "Confidence", value: 18, color: "#111111" },
 ];
 
 // Accent colors per mood label - drives the badge, glow and headline.
 const MOOD_STYLES = {
-  "RISK-OFF": { accent: "#F0445A", badge: "#A11B2E", badgeBorder: "#E5485B" },
-  "RISK-ON": { accent: "#22C55E", badge: "#146B36", badgeBorder: "#34D27A" },
-  NEUTRAL: { accent: "#A3A3A3", badge: "#3A3A3A", badgeBorder: "#6B6B6B" },
+  "RISK-OFF": { accent: "#E5484D", badge: "#C42B3A", badgeBorder: "#E5485B" },
+  "RISK-ON": { accent: "#22A06B", badge: "#1B8A5A", badgeBorder: "#34D27A" },
+  NEUTRAL: { accent: "#71717A", badge: "#3A3A3A", badgeBorder: "#6B6B6B" },
 };
 
 const INFO_TEXT =
@@ -239,9 +241,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.55,
-    shadowRadius: 10,
-    elevation: 4,
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    elevation: 3,
   },
 
   moodText: {
@@ -274,10 +276,10 @@ const styles = StyleSheet.create({
 
   /* Card */
   card: {
-    backgroundColor: "#0B0D14",
+    backgroundColor: "#F5F5F7",
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: "#1C2130",
+    borderColor: "#E6E6EA",
     padding: 16,
     overflow: "hidden",
   },
@@ -289,7 +291,7 @@ const styles = StyleSheet.create({
     width: 260,
     height: 260,
     borderRadius: 130,
-    opacity: 0.1,
+    opacity: 0.08,
   },
 
   headerRow: {
@@ -325,12 +327,12 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: "#22C55E",
+    backgroundColor: "#22A06B",
     marginRight: 10,
   },
 
   liveDotLoading: {
-    backgroundColor: "#6B6B6B",
+    backgroundColor: "#A1A1AA",
   },
 
   infoButton: {

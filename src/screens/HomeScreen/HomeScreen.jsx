@@ -16,6 +16,7 @@ import AIChatFAB from "./HomeComponets/AIChatFAB";
 
 import { useMarketNews } from "../../hooks/useMarketNews";
 import { computeMarketMood } from "../../utils/marketMood";
+import { colors } from "../../theme/colors";
 
 export default function HomeScreen({ navigation }) {
   const {
@@ -180,7 +181,7 @@ export default function HomeScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#000000",
+    backgroundColor: colors.base,
   },
 
   content: {

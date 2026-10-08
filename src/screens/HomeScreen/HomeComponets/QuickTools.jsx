@@ -24,7 +24,7 @@ export default function QuickTools({ onSelectTool }) {
         <Ionicons
           name={expanded ? "chevron-down" : "chevron-up"}
           size={16}
-          color="#8B949E"
+          color="#71717A"
         />
       </Pressable>
 
@@ -37,7 +37,7 @@ export default function QuickTools({ onSelectTool }) {
               style={({ pressed }) => [styles.tile, pressed && styles.pressed]}
             >
               <View style={styles.iconBox}>
-                <Ionicons name={tool.icon} size={20} color="#9CC2FF" />
+                <Ionicons name={tool.icon} size={20} color="#000000" />
               </View>
 
               <Text style={styles.tileLabel}>{tool.label}</Text>
@@ -51,11 +51,11 @@ export default function QuickTools({ onSelectTool }) {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: "#0B1420",
+    backgroundColor: "#F5F5F7",
     borderRadius: 16,
     padding: 14,
     borderWidth: 1,
-    borderColor: "#1C2A3A",
+    borderColor: "#E6E6EA",
   },
 
   header: {
@@ -65,7 +65,7 @@ const styles = StyleSheet.create({
   },
 
   title: {
-    color: "#FFFFFF",
+    color: "#000000",
     fontSize: 16,
     fontWeight: "700",
   },
@@ -83,9 +83,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: 4,
     borderRadius: 12,
-    backgroundColor: "#0F1B2B",
+    backgroundColor: "#FFFFFF",
     borderWidth: 1,
-    borderColor: "#1F5FD0",
+    borderColor: "#E0E0E4",
   },
 
   pressed: {
@@ -98,12 +98,12 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#13233A",
+    backgroundColor: "#F0F0F2",
     marginBottom: 8,
   },
 
   tileLabel: {
-    color: "#E5E7EB",
+    color: "#111111",
     fontSize: 11,
     fontWeight: "600",
     textAlign: "center",

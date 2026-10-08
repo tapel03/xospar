@@ -22,7 +22,8 @@ export default function BottomTabNavigator() {
           paddingBottom: 8,
           paddingTop: 8,
           backgroundColor: colors.base,
-          borderTopColor: colors.base,
+          // Hairline so the white tab bar separates from the white page.
+          borderTopColor: colors[200],
         },
 
         tabBarActiveTintColor: colors[950],

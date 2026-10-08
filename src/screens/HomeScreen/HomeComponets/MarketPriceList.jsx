@@ -5,16 +5,16 @@ import { Ionicons } from "@expo/vector-icons";
 import Sparkline from "../../MarketsScreen/MarketsComponents/AI/AIChatComponents/Sparkline";
 import { useCryptoTicker } from "../../../hooks/useCryptoTicker";
 
-// Local dark palette - matches the rest of Home now that this card is
-// black instead of the reference's white.
-const CARD_BG = "#101014";
-const TEXT_LIGHT = "#FFFFFF";
-const TEXT_GRAY = "#8A8A8E";
-const DIVIDER = "#232326";
-const HANDLE_COLOR = "#3A3A3D";
-const SORT_MENU_BG = "#17171A";
-const POSITIVE = "#2ECC81";
-const NEGATIVE = "#FF5A5F";
+// Light palette - soft grey card on the white page, black text, same
+// red/green semantics for price moves.
+const CARD_BG = "#F5F5F7";
+const TEXT_LIGHT = "#000000";
+const TEXT_GRAY = "#8E8E93";
+const DIVIDER = "#E4E4E7";
+const HANDLE_COLOR = "#D4D4D8";
+const SORT_MENU_BG = "#FFFFFF";
+const POSITIVE = "#22A06B";
+const NEGATIVE = "#E5484D";
 
 const ASSETS = [
   {
@@ -22,7 +22,7 @@ const ASSETS = [
     display: "BTC",
     name: "Bitcoin",
     icon: "₿",
-    iconBg: "#3A2E17",
+    iconBg: "#FFF1DE",
     iconColor: "#F7931A",
     capRank: 1,
   },
@@ -31,8 +31,8 @@ const ASSETS = [
     display: "ETH",
     name: "Ethereum",
     icon: "Ξ",
-    iconBg: "#232A45",
-    iconColor: "#8C9EFF",
+    iconBg: "#E8ECFF",
+    iconColor: "#5C6FD6",
     capRank: 2,
   },
   {
@@ -40,7 +40,7 @@ const ASSETS = [
     display: "USDT",
     name: "Tether",
     icon: "₮",
-    iconBg: "#1B3329",
+    iconBg: "#DDF5EC",
     iconColor: "#26A17B",
     capRank: 3,
   },
@@ -273,6 +273,8 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: CARD_BG,
     borderRadius: 22,
+    borderWidth: 1,
+    borderColor: "#E6E6EA",
     paddingHorizontal: 18,
     paddingTop: 10,
     paddingBottom: 6,

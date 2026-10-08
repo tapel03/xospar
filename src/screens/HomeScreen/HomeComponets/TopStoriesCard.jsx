@@ -1,4 +1,4 @@
-import {
+ import {
   View,
   Text,
   StyleSheet,
@@ -20,7 +20,7 @@ function StoryImage({ uri }) {
       <Ionicons
         name="globe-outline"
         size={34}
-        color="#5E6873"
+        color="#A1A1AA"
       />
     </View>
   );
@@ -52,7 +52,7 @@ export default function TopStoriesCard({
         <Text style={styles.sectionTitle}>Top Stories</Text>
 
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="small" color="#FFFFFF" />
+          <ActivityIndicator size="small" color="#000000" />
           <Text style={styles.loadingText}>
             Loading latest market news...
           </Text>
@@ -79,7 +79,7 @@ export default function TopStoriesCard({
         <Text style={styles.sectionTitle}>Top Stories</Text>
 
         {loading ? (
-          <ActivityIndicator size="small" color="#AAAAAA" />
+          <ActivityIndicator size="small" color="#71717A" />
         ) : null}
       </View>
 
@@ -117,7 +117,7 @@ export default function TopStoriesCard({
           <Ionicons
             name="bookmark-outline"
             size={18}
-            color="#AAAAAA"
+            color="#71717A"
           />
         </View>
       </Pressable>
@@ -142,7 +142,7 @@ export default function TopStoriesCard({
               <Ionicons
                 name="newspaper-outline"
                 size={20}
-                color="#5E6873"
+                color="#A1A1AA"
               />
             </View>
           )}
@@ -186,10 +186,10 @@ export default function TopStoriesCard({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: "#101820",
+    backgroundColor: "#F5F5F7",
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#1C2630",
+    borderColor: "#E6E6EA",
     padding: 14,
   },
 
@@ -200,7 +200,7 @@ const styles = StyleSheet.create({
   },
 
   sectionTitle: {
-    color: "#FFFFFF",
+    color: "#000000",
     fontSize: 16,
     fontWeight: "700",
     marginBottom: 12,
@@ -220,7 +220,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     overflow: "hidden",
     position: "relative",
-    backgroundColor: "#1C2630",
+    backgroundColor: "#E4E4E7",
   },
 
   image: {
@@ -237,20 +237,20 @@ const styles = StyleSheet.create({
     position: "absolute",
     left: 10,
     top: 10,
-    backgroundColor: "#3B1F20",
+    backgroundColor: "#FDECEC",
     paddingHorizontal: 9,
     paddingVertical: 5,
     borderRadius: 12,
   },
 
   badgeText: {
-    color: "#FF5A5F",
+    color: "#E5484D",
     fontSize: 10,
     fontWeight: "700",
   },
 
   headline: {
-    color: "#FFFFFF",
+    color: "#000000",
     fontSize: 18,
     fontWeight: "700",
     lineHeight: 24,
@@ -258,7 +258,7 @@ const styles = StyleSheet.create({
   },
 
   description: {
-    color: "#9DA4AE",
+    color: "#52525B",
     fontSize: 12,
     lineHeight: 18,
     marginTop: 7,
@@ -273,14 +273,14 @@ const styles = StyleSheet.create({
 
   meta: {
     flex: 1,
-    color: "#777F88",
+    color: "#8E8E93",
     fontSize: 10,
     marginRight: 10,
   },
 
   divider: {
     height: 1,
-    backgroundColor: "#1C2630",
+    backgroundColor: "#E4E4E7",
     marginVertical: 15,
   },
 
@@ -295,7 +295,7 @@ const styles = StyleSheet.create({
     height: 56,
     borderRadius: 10,
     marginRight: 12,
-    backgroundColor: "#303841",
+    backgroundColor: "#E4E4E7",
   },
 
   thumbnailPlaceholder: {
@@ -308,20 +308,20 @@ const styles = StyleSheet.create({
   },
 
   storyTitle: {
-    color: "#FFFFFF",
+    color: "#000000",
     fontSize: 13,
     fontWeight: "600",
     lineHeight: 18,
   },
 
   storyMeta: {
-    color: "#7D8691",
+    color: "#8E8E93",
     marginTop: 4,
     fontSize: 11,
   },
 
   mediumBadge: {
-    backgroundColor: "#2A2F38",
+    backgroundColor: "#E4E4E7",
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 10,
@@ -329,7 +329,7 @@ const styles = StyleSheet.create({
   },
 
   mediumText: {
-    color: "#FFFFFF",
+    color: "#111111",
     fontSize: 10,
     fontWeight: "700",
   },
@@ -339,7 +339,7 @@ const styles = StyleSheet.create({
   },
 
   footerText: {
-    color: "#3A7BD5",
+    color: "#000000",
     fontWeight: "600",
   },
 
@@ -351,12 +351,12 @@ const styles = StyleSheet.create({
   },
 
   loadingText: {
-    color: "#7D8691",
+    color: "#8E8E93",
     fontSize: 12,
   },
 
   emptyText: {
-    color: "#7D8691",
+    color: "#8E8E93",
     fontSize: 13,
     lineHeight: 19,
     paddingVertical: 20,
