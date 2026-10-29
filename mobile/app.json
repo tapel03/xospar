@@ -1,0 +1,27 @@
+{
+  "expo": {
+    "name": "Edgeline",
+    "slug": "edgeline",
+    "version": "0.2.0",
+    "orientation": "default",
+    "userInterfaceStyle": "automatic",
+    "backgroundColor": "#090B0B",
+    "plugins": [
+      "@maplibre/maplibre-react-native"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.edgeline.app"
+    },
+    "web": {
+      "bundler": "metro"
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "android": {
+      "edgeToEdgeEnabled": true,
+      "package": "com.edgeline.app"
+    }
+  }
+}

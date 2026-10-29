@@ -1,0 +1,15 @@
+# From the repo root:  docker compose -f infra/docker/docker-compose.yml up --build
+services:
+  backend:
+    build: { context: ../.., dockerfile: infra/docker/Dockerfile.service }
+    env_file: ../../backend/.env
+    ports: ["4000:4000"]
+  # Not used yet. The backend keeps prices, cache and quotas in memory today. These are here for
+  # when candles are stored (Timescale) and the cache/quota move to Redis.
+  # postgres:
+  #   image: timescale/timescaledb:latest-pg16
+  #   environment: { POSTGRES_USER: app, POSTGRES_PASSWORD: app, POSTGRES_DB: app }
+  #   ports: ["5432:5432"]
+  # redis:
+  #   image: redis:7
+  #   ports: ["6379:6379"]

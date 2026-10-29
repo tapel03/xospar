@@ -1,0 +1,19 @@
+{
+  "name": "@edgeline/backend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22.13.0" },
+  "scripts": {
+    "dev": "node --watch --env-file-if-exists=.env gateway/src/server.js",
+    "start": "node --env-file-if-exists=.env gateway/src/server.js",
+    "seed": "node scripts/seed-assets.js",
+    "test": "node --test \"tests/*.test.js\""
+  },
+  "dependencies": {
+    "@edgeline/shared-types": "*",
+    "@fastify/cors": "^10.0.0",
+    "fastify": "^5.0.0",
+    "ws": "^8.18.0"
+  }
+}
