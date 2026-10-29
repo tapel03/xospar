@@ -1,4 +1,4 @@
-# Savanai
+# xospar
 
 **Understand the market.**
 
@@ -15,7 +15,7 @@ Built for South Africa and emerging markets at launch, for English-speaking trad
 - Traders break their own rules, and nothing checks their trades against those rules.
 - Beginners find risk maths (lot size, pip value, risk/reward) error-prone.
 
-## What Savanai does
+## What xospar does
 
 - **Onboard in three questions.** Experience level, markets of interest and main goal seed your watch list and home feed.
 - **Watch live prices.** Crypto, forex, indices and stocks, with line and candle charts across 10 timeframes.
@@ -28,7 +28,7 @@ Built for South Africa and emerging markets at launch, for English-speaking trad
 
 ## Core principle
 
-**Savanai explains; it never advises.** Every AI and analysis screen carries an "Education only, not financial advice" notice. Scenarios are phrased as conditions ("if price closes above X"), not predictions. Your rules stay in charge: the AI checks your trades against them and never replaces them.
+**xospar explains; it never advises.** Every AI and analysis screen carries an "Education only, not financial advice" notice. Scenarios are phrased as conditions ("if price closes above X"), not predictions. Your rules stay in charge: the AI checks your trades against them and never replaces them.
 
 ## Who it is for
 
@@ -145,7 +145,7 @@ Target launch is about 22 weeks from kickoff. See the [Implementation Plan](docs
 
 ## Important disclaimer
 
-Savanai is an educational tool. Nothing in the app is financial advice, a recommendation or an offer to trade. Markets carry risk and you can lose money. Prices and news may be delayed or wrong. Do your own research and speak to a licensed financial adviser before making decisions.
+xospar is an educational tool. Nothing in the app is financial advice, a recommendation or an offer to trade. Markets carry risk and you can lose money. Prices and news may be delayed or wrong. Do your own research and speak to a licensed financial adviser before making decisions.
 
 ## Contributing
 
