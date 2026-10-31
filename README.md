@@ -1,4 +1,4 @@
-# Edgeline
+# xospar
 
 Trading intelligence, journal and AI mentor. The Edgeline app (`mobile/`) with the Savanai market-data, news and AI APIs moved behind its own backend (`backend/`).
 
