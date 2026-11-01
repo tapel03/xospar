@@ -2,7 +2,9 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View, BackHandler, PanResponder } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useLayout } from '../components/ui';
+import { TabSkeleton } from '../components/ui/Skeletons';
 import { Frame } from './Frame';
+import { useStore } from '../app/store';
 import OverviewScreen from '../features/home/screens/OverviewScreen';
 import MarketsScreen from '../features/markets/screens/MarketsScreen';
 import JournalScreen from '../features/journal/screens/JournalScreen';
@@ -23,7 +25,12 @@ const SCREENS = {
   calendar: CalendarScreen, settings: SettingsScreen, correlation: CorrelationScreen, more: MoreScreen,
 };
 
+// How long a tab's skeleton stays up the first time it is opened. The very first tab after launch stays a little longer.
+const FIRST_TAB_MS = 700;
+const NEW_TAB_MS = 320;
+
 export default function Shell({ route, navigation }) {
+  const { ready } = useStore();
   const [tab, setTab] = useState(route.params?.tab || 'overview');
   const tabRef = useRef(tab);
   tabRef.current = tab;
@@ -71,10 +78,23 @@ export default function Shell({ route, navigation }) {
   const { wide } = useLayout();
   const key = wide && tab === 'more' ? 'overview' : tab;
   const Screen = SCREENS[key] || OverviewScreen;
+
+  // The header and bottom bar (Frame) are always there. The tab's content shows a skeleton the first time
+  // it is opened, and while the app is still loading. Tabs already opened this session switch instantly.
+  const visited = useRef(new Set());
+  const [shownKey, setShownKey] = useState(null);
+  useEffect(() => {
+    if (!ready || visited.current.has(key)) return undefined;
+    const first = visited.current.size === 0;
+    const t = setTimeout(() => { visited.current.add(key); setShownKey(key); }, first ? FIRST_TAB_MS : NEW_TAB_MS);
+    return () => clearTimeout(t);
+  }, [key, ready]);
+  const open = ready && (visited.current.has(key) || shownKey === key);
+
   return (
     <Frame active={key} onSelect={select}>
       <View style={{ flex: 1 }} {...pan.panHandlers}>
-        <Screen go={select} params={route.params || {}} />
+        {open ? <Screen go={select} params={route.params || {}} /> : <TabSkeleton tab={key} />}
       </View>
     </Frame>
   );

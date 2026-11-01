@@ -5,8 +5,9 @@ import { Frame } from '../../../navigation/Frame';
 import { Screen, PageTitle, T, Card, Row, Badge, Button, Segmented, Field, Toggle, Sheet, Empty, Disclaimer } from '../../../components/ui';
 import { useStore } from '../../../app/store';
 
-const BLANK = { platform: 'MT5', nickname: '', login: '', server: '', password: '', mode: 'Investor', save: true };
-const MODE_LABEL = { Investor: 'Investor (read-only)', Master: 'Master (can trade)' };
+// New accounts start as a Demo account with trading access, so the first orders can be tested safely.
+const BLANK = { platform: 'MT5', nickname: '', login: '', server: '', password: '', mode: 'Master', accountType: 'Demo', suffix: '', save: true };
+const MODE_LABEL = { Investor: 'Read-only (investor)', Master: 'Can trade (master)' };
 const FS = { flexBasis: 'auto', flexGrow: 0 };
 
 function confirmAction(title, message, label, onYes) {
@@ -28,7 +29,7 @@ export default function ManageAccountsScreen({ route, navigation }) {
   const openAdd = () => { setEditing(null); setForm({ ...BLANK, save: savePw }); setShowPw(false); setSheet(true); };
   const openEdit = (a) => {
     setEditing(a);
-    setForm({ platform: a.platform, nickname: a.nickname, login: a.login, server: a.server, password: '', mode: a.mode, save: savePw });
+    setForm({ platform: a.platform, nickname: a.nickname, login: a.login, server: a.server, password: '', mode: a.mode, accountType: a.accountType || 'Demo', suffix: a.suffix || '', save: savePw });
     setShowPw(false);
     setSheet(true);
   };
@@ -42,7 +43,10 @@ export default function ManageAccountsScreen({ route, navigation }) {
     if (!valid) return;
     const login = form.login.trim();
     const keep = form.save && savePw;
-    const base = { platform: form.platform, nickname: form.nickname.trim() || `${form.platform} ${login}`, login, server: form.server.trim(), mode: form.mode };
+    const base = {
+      platform: form.platform, nickname: form.nickname.trim() || `${form.platform} ${login}`, login, server: form.server.trim(),
+      mode: form.mode, accountType: form.accountType, suffix: form.suffix.trim(),
+    };
     if (editing) {
       const patch = { ...base };
       if (form.password) patch.password = keep ? form.password : '';
@@ -72,6 +76,7 @@ export default function ManageAccountsScreen({ route, navigation }) {
   };
 
   const editingHasNoPw = editing && !editing.password;
+  const execMode = settings.execMode === undefined ? 'Off' : settings.execMode;
 
   return (
     <Frame active="settings">
@@ -93,19 +98,28 @@ export default function ManageAccountsScreen({ route, navigation }) {
             </View>
             <Button small variant="secondary" icon="trash-2" label="Clear all" disabled={savedCount === 0} onPress={clearAll} />
           </Row>
-          <Disclaimer>Use your investor (read-only) password whenever your broker offers one. Edgeline only reads fills and never places trades.</Disclaimer>
+          <Row style={{ justifyContent: 'space-between', paddingVertical: 6 }} gap={12}>
+            <View style={{ flex: 1 }}>
+              <T v="h3" style={{ fontWeight: '500' }}>Trade execution</T>
+              <T v="small" muted>{execMode === 'Off' ? 'Off. Edgeline only reads your accounts.' : execMode === 'Demo only' ? 'On for demo accounts only.' : 'On for demo and live accounts.'}</T>
+            </View>
+            <Button small variant="secondary" icon="settings" label="Change" onPress={() => navigation.navigate('Main', { tab: 'settings', ts: Date.now() })} />
+          </Row>
+          <Disclaimer>Use a master password so Edgeline can place the trades you confirm on that account. Use the investor password for read-only import. Test on a demo account first.</Disclaimer>
         </Card>
 
         {accounts.length === 0 ? (
-          <Empty icon="link" title="No trading accounts" body="Add your MT4 or MT5 account to bring your fills into your journal." action="Add account" onAction={openAdd} />
+          <Empty icon="link" title="No trading accounts" body="Add your MT4 or MT5 account to bring your fills into your journal and place trades from Edgeline." action="Add account" onAction={openAdd} />
         ) : accounts.map((a) => {
           const on = a.status === 'Connected';
+          const live = a.accountType === 'Live';
           return (
             <Card key={a.id} style={{ marginBottom: 12 }} pad={16}>
               <Row style={{ justifyContent: 'space-between', alignItems: 'flex-start' }} gap={10}>
                 <View style={{ flex: 1 }}>
-                  <Row gap={8}>
+                  <Row gap={8} style={{ flexWrap: 'wrap' }}>
                     <Badge kind="solid" label={a.platform} />
+                    <Badge kind={live ? 'warn' : 'neutral'} label={live ? 'Live' : 'Demo'} />
                     <T v="h3" numberOfLines={1} style={{ flexShrink: 1 }}>{a.nickname}</T>
                   </Row>
                   <T v="caption" muted style={{ marginTop: 4 }}>Login {a.login} · {a.server}</T>
@@ -117,9 +131,11 @@ export default function ManageAccountsScreen({ route, navigation }) {
                 <View><T v="caption" muted>Access</T><T v="small">{MODE_LABEL[a.mode] || a.mode}</T></View>
                 <View><T v="caption" muted>Password</T><T v="small">{a.password ? 'Saved on this device' : 'Not saved'}</T></View>
                 <View><T v="caption" muted>Last sync</T><T v="small">{a.lastSync}</T></View>
+                {a.suffix ? <View><T v="caption" muted>Symbol suffix</T><T v="small" mono>{a.suffix}</T></View> : null}
               </Row>
 
-              {a.mode === 'Master' ? <T v="caption" bold style={{ marginTop: 10 }}>⚠ A master password can place trades. Edgeline only needs the investor password.</T> : null}
+              {a.mode === 'Master' && live ? <T v="caption" bold style={{ marginTop: 10 }}>⚠ Live account with trading access. Orders you confirm in Edgeline can use real money.</T> : null}
+              {a.mode === 'Investor' ? <T v="caption" muted style={{ marginTop: 10 }}>Read-only. Edgeline can import fills but cannot place trades on this account.</T> : null}
 
               <Row style={{ marginTop: 14, flexWrap: 'wrap' }}>
                 {on ? <Button small icon="refresh-cw" label="Sync now" onPress={() => connect(a)} /> : <Button small icon="link" label="Connect" onPress={() => connect(a)} />}
@@ -134,7 +150,7 @@ export default function ManageAccountsScreen({ route, navigation }) {
           );
         })}
 
-        <Disclaimer>Broker sync is not live in this prototype. Accounts and passwords are kept in the app's memory only and are lost when the app closes.</Disclaimer>
+        <Disclaimer>The broker connection is not live in this prototype. Accounts and passwords are kept in the app's memory only and are lost when the app closes, and no orders are sent yet.</Disclaimer>
       </Screen>
 
       <Sheet
@@ -147,16 +163,21 @@ export default function ManageAccountsScreen({ route, navigation }) {
           <T v="label">Platform</T>
           <Segmented options={['MT5', 'MT4']} value={form.platform} onChange={set('platform')} />
         </View>
+        <View style={{ gap: 8 }}>
+          <T v="label">Account type</T>
+          <Segmented options={['Demo', 'Live']} value={form.accountType} onChange={set('accountType')} />
+          <T v="caption" muted>{form.accountType === 'Demo' ? 'Practice money. Best for testing orders first.' : 'Real money. Orders sent here use your funds.'}</T>
+        </View>
         <Field label="Account name (optional)" value={form.nickname} onChangeText={set('nickname')} placeholder="Main account" style={FS} />
         <Field label="Login (account number)" value={form.login} onChangeText={set('login')} placeholder="5012345" keyboardType="number-pad" style={FS} />
         <Field label="Server" value={form.server} onChangeText={set('server')} placeholder="BrokerName-Live" autoCapitalize="none" autoCorrect={false} style={FS} />
         <View style={{ gap: 8 }}>
-          <T v="label">Password type</T>
-          <Segmented options={['Investor', 'Master']} value={form.mode} onChange={set('mode')} />
-          <T v="caption" muted>{form.mode === 'Investor' ? 'Read-only. Recommended: Edgeline can see your fills but cannot trade.' : 'A master password can place trades. Use investor unless you need more.'}</T>
+          <T v="label">Access</T>
+          <Segmented options={['Master', 'Investor']} value={form.mode} onChange={set('mode')} />
+          <T v="caption" muted>{form.mode === 'Master' ? 'Master password: Edgeline can place the trades you confirm on this account.' : 'Investor password: read-only. Edgeline can import fills but cannot trade.'}</T>
         </View>
         <Field
-          label={editing ? 'Password (leave blank to keep)' : 'Password'}
+          label={editing ? `${form.mode === 'Master' ? 'Master' : 'Investor'} password (leave blank to keep)` : `${form.mode === 'Master' ? 'Master' : 'Investor'} password`}
           value={form.password}
           onChangeText={set('password')}
           secureTextEntry={!showPw}
@@ -166,6 +187,16 @@ export default function ManageAccountsScreen({ route, navigation }) {
           style={FS}
         />
         <Row><Button small variant="ghost" icon={showPw ? 'eye-off' : 'eye'} label={showPw ? 'Hide password' : 'Show password'} onPress={() => setShowPw(!showPw)} /></Row>
+        <Field
+          label="Symbol suffix (optional)"
+          value={form.suffix}
+          onChangeText={set('suffix')}
+          placeholder=".m"
+          autoCapitalize="none"
+          autoCorrect={false}
+          hint="Only if your broker adds a suffix to symbols, such as EURUSD.m or EURUSDpro. Leave empty otherwise."
+          style={FS}
+        />
         <Toggle
           label="Save password on this device"
           detail={savePw ? 'Lets Edgeline reconnect without asking.' : 'Turned off above in the Passwords card.'}

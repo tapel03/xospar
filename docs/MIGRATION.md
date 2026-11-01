@@ -65,8 +65,8 @@ It was an empty scaffold (every file a one-line stub), so it is replaced by `bac
 
 ## Not done
 
-- Screens still read most of their data from `mocks/mock.js`. Wired to the backend: News, asset-detail candles and price, Markets prices, AI mentor. The mood endpoint and the asset catalogue endpoint exist but no screen reads them yet.
+- Done since: journal, positions, account summary, analytics, alerts and alert history, notifications, strategies, mentor chats, broker accounts, profile, settings and the Markets list now load from and save to the backend (`app/store.js`, `services/userApi.js`, `backend/services/users`). Mood and the economic calendar are wired too. Still on sample data: the events map, correlations, the trade-detail "what happened" timeline, and market names/decimals (`/v1/assets` exists but the app still reads `mocks/mock.js` for it).
 - Large files were moved, not split (`ui/index.js`, `AssetDetailScreen`, `AccountScreens`), as step 2 of the doc's migration order says; splitting is step 3.
-- The doc's other services (auth, users, alerts, notifications, journal, brokers, billing, admin) have no Savanai API behind them, so they are not created. `docs/admin.md` and `docs/backend-plan-original.md` cover them.
-- Not wired: economic calendar and global events (no provider existed in either project).
+- Auth, users, journal, alerts and notifications now exist (`backend/services/users`, `services/alerts`, `services/journal`). Brokers (real MT5 sync), billing and admin are still not created. `docs/admin.md` and `docs/backend-plan-original.md` cover them.
+- Economic calendar: wired (Forex Factory weekly JSON). Global events map: not wired (no provider).
 - Dockerfile is written but I could not run Docker here.

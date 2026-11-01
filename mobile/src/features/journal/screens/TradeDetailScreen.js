@@ -15,14 +15,26 @@ const REVIEWS = {
 };
 
 export default function TradeDetailScreen({ route, navigation }) {
-  const { trades } = useStore();
+  const { trades, updateTrade, removeTrade, closePositions, sync } = useStore();
   const { wide } = useLayout();
-  const t = trades.find((x) => x.id === route.params?.id) || trades[0];
-  const a = assetBy(t.asset);
+  const t = trades.find((x) => x.id === route.params?.id);
   const candles = useMemo(() => {
+    if (!t) return [];
     const base = makeCandles(t.asset, 60); const shift = t.entry - base[30].c;
     return base.map((k) => ({ ...k, o: k.o + shift, h: k.h + shift, l: k.l + shift, c: k.c + shift }));
-  }, [t.id]);
+  }, [t && t.id]);
+  if (!t) {
+    return (
+      <Frame active="journal">
+        <Screen>
+          <PageTitle onBack={() => navigation.goBack()} title="Trade not found" />
+          <T muted>This trade is no longer in your journal.</T>
+        </Screen>
+      </Frame>
+    );
+  }
+  const a = assetBy(t.asset);
+  const isOpen = t.status === 'open' || String(t.date).includes('open');
   const rv = REVIEWS[t.verdict] || REVIEWS['valid-loss'];
   const ctx = tradeContext[t.id] || tradeContext.default;
   const lines = [
@@ -96,6 +108,11 @@ export default function TradeDetailScreen({ route, navigation }) {
           <T v="caption" muted style={{ marginTop: 12 }}>Trade thesis</T>
           <T>{t.thesis}</T>
         </Card>
+        <Row style={{ flexWrap: 'wrap', marginTop: 16 }} gap={8}>
+          {t.review !== 'reviewed' ? <Button small icon="check" label="Mark reviewed" onPress={() => updateTrade(t.id, { review: 'reviewed' })} /> : <Badge kind="pass" label="Reviewed" />}
+          {isOpen && sync.status === 'live' ? <Button small variant="secondary" icon="x-circle" label="Close at market" onPress={() => closePositions(t.id)} /> : null}
+          <Button small variant="ghost" icon="trash-2" label="Delete trade" onPress={() => { removeTrade(t.id); navigation.goBack(); }} />
+        </Row>
         <Disclaimer>AI reviews compare your trade to the rules you wrote. Edit your strategy if a rule no longer reflects how you trade.</Disclaimer>
       </Screen>
     </Frame>

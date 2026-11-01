@@ -251,7 +251,7 @@ const st = themed(() => ({
   search: { width: 380, height: 40, borderRadius: 16, borderWidth: 1, borderColor: c.border, backgroundColor: c.elevated, flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12 },
   pill: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 32, paddingHorizontal: 11, borderRadius: 16, borderWidth: 1, borderColor: c.border, backgroundColor: c.elevated },
   iconBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  count: { position: 'absolute', top: 4, right: 4, minWidth: 16, height: 16, borderRadius: 8, backgroundColor: c.blue, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 3 },
+  count: { position: 'absolute', top: 4, right: 4, minWidth: 16, height: 16, borderRadius: 8, backgroundColor: c.red, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 3 },
   bottom: { flexDirection: 'row', borderTopWidth: 1, borderTopColor: c.border, backgroundColor: c.bgAlt, paddingTop: 6 },
   bottomItem: { flex: 1, alignItems: 'center', gap: 2, minHeight: 52 },
   bottomIcon: { width: 44, height: 28, alignItems: 'center', justifyContent: 'center' },

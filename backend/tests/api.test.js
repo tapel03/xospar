@@ -67,7 +67,7 @@ test('health reports feeds and AI providers', async () => {
 test('asset catalogue is served', async () => {
   const { body } = await get('/v1/assets');
   assert.ok(body.items.length >= 40);
-  assert.equal(body.items.find((a) => a.sym === 'US500').live, false);
+  assert.equal(body.items.find((a) => a.sym === 'US500').live, true);   // indices are served by Twelve Data now
 });
 
 test('candles come back chronological, with the key added server side', async () => {
@@ -80,16 +80,15 @@ test('candles come back chronological, with the key added server side', async ()
   assert.ok(seen.tdKeys.every((k) => k === 'td-test-key'));
 });
 
-test('candles: unsupported index, unknown symbol, bad range', async () => {
-  assert.equal((await get('/v1/candles?sym=US500&range=1H')).body.status, 'unsupported');
+test('candles: unknown symbol, bad range', async () => {
   assert.equal((await get('/v1/candles?sym=NOPE&range=1H')).status, 404);
   assert.equal((await get('/v1/candles?sym=' + encodeURIComponent('EUR/USD') + '&range=7Y')).status, 400);
 });
 
 test('quotes snapshot falls back to a one-off provider fetch', async () => {
-  const { body } = await get('/v1/quotes?syms=' + encodeURIComponent('GBP/USD,US500'));
+  const { body } = await get('/v1/quotes?syms=' + encodeURIComponent('GBP/USD,NOPE'));
   assert.equal(body.quotes[0].sym, 'GBP/USD'); assert.equal(body.quotes[0].price, 1.3418);
-  assert.deepEqual(body.missing, ['US500']);
+  assert.deepEqual(body.missing, ['NOPE']);
 });
 
 test('news is deduped, scored and shaped for the app', async () => {

@@ -215,12 +215,18 @@ export function Button({ label, onPress, variant = 'primary', icon, style, disab
   );
 }
 
-export function Segmented({ options, value, onChange, style, scroll, counts }) {
+/**
+ * Pill selector. inverted: the selected option is white in dark mode and black in light mode,
+ * like the inverted cards on the Overview page.
+ */
+export function Segmented({ options, value, onChange, style, scroll, counts, inverted }) {
   const items = options.map((o) => {
     const on = o === value;
+    const onBox = inverted ? { backgroundColor: c.white, borderWidth: 1, borderColor: c.white } : s.segOn;
+    const onText = inverted ? c.black : c.white;
     return (
-      <Pressable key={o} onPress={() => onChange(o)} style={[s.seg, on && s.segOn]} accessibilityState={{ selected: on }}>
-        <Text style={{ color: on ? c.white : c.muted, fontWeight: on ? '700' : '500', fontSize: 13 }}>
+      <Pressable key={o} onPress={() => onChange(o)} style={[s.seg, on && onBox]} accessibilityState={{ selected: on }}>
+        <Text style={{ color: on ? onText : c.muted, fontWeight: on ? '700' : '500', fontSize: 13 }}>
           {o}{counts && counts[o] != null ? `  ${counts[o]}` : ''}
         </Text>
       </Pressable>
@@ -254,12 +260,17 @@ export function Stat({ label, value, children, style, size = 'h2' }) {
   );
 }
 
-export function Metric({ label, value, sub, style }) {
+/**
+ * Metric tile. inverted: white in dark mode, black in light mode, with contrasting text
+ * (same look as the inverted cards on the Overview page).
+ */
+export function Metric({ label, value, sub, style, inverted }) {
+  const fg = c.black;
   return (
-    <View style={[s.metric, style]}>
-      <T v="caption" muted>{label}</T>
-      <T v="h2" mono style={{ marginTop: 6 }}>{value}</T>
-      {sub ? (typeof sub === 'string' ? <T v="caption" muted style={{ marginTop: 2 }}>{sub}</T> : sub) : null}
+    <View style={[s.metric, inverted && { backgroundColor: c.white, borderColor: c.white }, style]}>
+      <T v="caption" muted={!inverted} style={inverted ? { color: fg, opacity: 0.7 } : undefined}>{label}</T>
+      <T v="h2" mono style={[{ marginTop: 6 }, inverted && { color: fg }]}>{value}</T>
+      {sub ? (typeof sub === 'string' ? <T v="caption" muted={!inverted} style={[{ marginTop: 2 }, inverted && { color: fg, opacity: 0.65 }]}>{sub}</T> : sub) : null}
     </View>
   );
 }

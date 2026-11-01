@@ -7,15 +7,18 @@ import { newsRoutes } from '../../services/news/src/routes.js';
 import { moodRoutes } from '../../services/mood-events/src/routes.js';
 import { aiRoutes } from '../../services/ai-gateway/src/routes.js';
 import { iconsRoutes } from '../../services/icons/src/routes.js';
+import { calendarRoutes } from '../../services/calendar/src/routes.js';
+import { usersRoutes } from '../../services/users/src/routes.js';
 
 export function registerRoutes(app, ctx) {
-  const { config, providers, bus, ingestor, router, quota, newsSource, logger } = ctx;
+  const { config, providers, bus, ingestor, router, quota, newsSource, calendarSource, db, alertEngine, logger } = ctx;
 
   app.get('/health', async () => ({
     ok: true,
     uptimeSeconds: Math.round(process.uptime()),
     feeds: ingestor?.health?.() ?? {},
     ai: router.available(),
+    alertsWatched: alertEngine?.size?.() ?? 0,
   }));
 
   app.get('/v1/assets', async () => ({
@@ -43,4 +46,7 @@ export function registerRoutes(app, ctx) {
   moodRoutes(app, { newsSource });
   aiRoutes(app, { router, quota });
   iconsRoutes(app, { config, logger });
+  if (calendarSource) calendarRoutes(app, { calendarSource });
+  // Registered last: its /v1/:coll routes are parametric, so every static /v1 route above wins.
+  if (db) usersRoutes(app, { db, bus, alertEngine, config });
 }

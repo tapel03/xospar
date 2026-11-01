@@ -5,8 +5,8 @@ import { colors as c, mono, getMode } from '../../../theme/tokens';
 import { Screen, PageTitle, T, Card, Row, Grid, Badge, Button, Stat, Icon, Empty, money, useLayout, s as ui } from '../../../components/ui';
 import { KV, ImpactBadge } from '../../../components/domain';
 import CalendarFilterSheet from '../components/CalendarFilterSheet';
-import { DEFAULT_FILTER, EXTRA_EVENTS, applyFilter, countActive, metaOf } from '../data/eventMeta';
-import { upcomingEvents } from '../../../mocks/mock';
+import { DEFAULT_FILTER, applyFilter, countActive, metaOf } from '../data/eventMeta';
+import { useEconomicCalendar } from '../hooks/useEconomicCalendar';
 import { useStore } from '../../../app/store';
 
 const DOW = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -18,8 +18,51 @@ function rng(seed) {
   return () => { s = (s * 16807) % 2147483647; return (s - 1) / 2147483646; };
 }
 
-/** Simulated trading days for any month. Future days are empty. Replace with journal data in production. */
-function buildMonth(year, month, t0) {
+const MON3 = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+/** When a closed trade happened: its timestamp from the server, or the "01 Oct 09:42" label offline. */
+function closedOn(t, t0) {
+  if (t.closedAt) return new Date(t.closedAt);
+  const m = /^(\d{1,2})\s+([A-Za-z]{3})/.exec(String(t.date));
+  if (!m) return String(t.date).startsWith('Today') ? t0 : null;
+  const mi = MON3.indexOf(m[2].toLowerCase());
+  if (mi < 0) return null;
+  let d = new Date(t0.getFullYear(), mi, Number(m[1]));
+  if (d > t0) d = new Date(t0.getFullYear() - 1, mi, Number(m[1]));
+  return d;
+}
+
+/** One cell per day of the month from the journal: P&L, trade count, win rate and edge adherence. */
+function buildMonth(year, month, t0, trades, eventDays) {
+  const count = new Date(year, month + 1, 0).getDate();
+  const byDay = {};
+  for (const t of trades) {
+    if (t.status === 'open' || String(t.date).includes('open')) continue;
+    const d = closedOn(t, t0);
+    if (!d || d.getFullYear() !== year || d.getMonth() !== month) continue;
+    (byDay[d.getDate()] ||= []).push(t);
+  }
+  const out = [];
+  for (let d = 1; d <= count; d++) {
+    const date = new Date(year, month, d);
+    const dow = date.getDay();
+    const event = eventDays[`${year}-${month}-${d}`] || null;
+    const isToday = date.getTime() === t0.getTime();
+    const list = byDay[d] || [];
+    if ((dow === 0 || dow === 6) && !list.length) { out.push({ d, dow, weekend: true, isToday }); continue; }
+    if (date > t0) { out.push({ d, dow, trades: 0, pnl: 0, future: true, event, isToday }); continue; }
+    const pnl = Math.round(list.reduce((s1, t) => s1 + (Number(t.pnl) || 0), 0));
+    out.push({
+      d, dow, trades: list.length, pnl, event, isToday,
+      winRate: list.length ? Math.round((list.filter((t) => t.pnl > 0).length / list.length) * 100) : null,
+      adherence: list.length ? Math.round((list.filter((t) => t.edge === 'yes').length / list.length) * 100) : null,
+    });
+  }
+  return out;
+}
+
+/** Old simulated month, kept for reference only. */
+// eslint-disable-next-line no-unused-vars
+function buildSampleMonth(year, month, t0) {
   const r = rng(year * 100 + month + 7);
   const count = new Date(year, month + 1, 0).getDate();
   const out = [];
@@ -56,7 +99,7 @@ const hm = (mins) => `${String(Math.floor(mins / 60)).padStart(2, '0')}:${String
 /** One economic event. Compact by default; tap to see what it is about. */
 function EventItem({ e }) {
   const [open, setOpen] = useState(false);
-  const info = EVENT_INFO[e.id] || { about: 'Scheduled market event.', affects: [e.tag] };
+  const info = EVENT_INFO[e.id] || { about: e.about || 'Scheduled market event.', affects: e.affects || [e.tag] };
   const meta = metaOf(e);
   const mins = toMin(e.time);
   const win = e.impact === 'High' && mins != null ? [mins - 60, mins + 60] : null;
@@ -93,7 +136,8 @@ function EventItem({ e }) {
 export default function CalendarScreen() {
   const nav = useNavigation();
   const { wide } = useLayout();
-  const { settings, setSetting } = useStore();
+  const { settings, setSetting, trades } = useStore();
+  const { events: allEvents, source } = useEconomicCalendar();
   const t0 = useMemo(() => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; }, []);
   const [cur, setCur] = useState({ y: t0.getFullYear(), m: t0.getMonth() });
   const [sel, setSel] = useState(t0.getDate());
@@ -101,11 +145,16 @@ export default function CalendarScreen() {
   const light = getMode() === 'light';
 
   const filter = settings.calFilter || DEFAULT_FILTER;
-  const allEvents = useMemo(() => [...EXTRA_EVENTS, ...upcomingEvents], []);
   const shown = useMemo(() => applyFilter(allEvents, filter), [allEvents, filter]);
   const activeFilters = countActive(filter);
 
-  const days = useMemo(() => buildMonth(cur.y, cur.m, t0), [cur, t0]);
+  // High-impact releases mark their day with a diamond.
+  const eventDays = useMemo(() => {
+    const m = {};
+    for (const e of allEvents) if (e.ts && e.impact === 'High') { const d = new Date(e.ts); m[`${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`] ||= e.label; }
+    return m;
+  }, [allEvents]);
+  const days = useMemo(() => buildMonth(cur.y, cur.m, t0, trades, eventDays), [cur, t0, trades, eventDays]);
   const traded = days.filter((d) => d.trades);
   const isThisMonth = cur.y === t0.getFullYear() && cur.m === t0.getMonth();
   const defaultSel = isThisMonth ? t0.getDate() : (traded.length ? traded[traded.length - 1].d : 1);
@@ -207,7 +256,7 @@ export default function CalendarScreen() {
           <Button small variant="secondary" icon="filter" label={activeFilters ? `Filter · ${activeFilters}` : 'Filter'} onPress={() => setFilterOpen(true)} />
         </Row>
       </Row>
-      <T v="caption" muted style={{ marginBottom: 10 }}>{filter.view} · showing {shown.length} of {allEvents.length} events</T>
+      <T v="caption" muted style={{ marginBottom: 10 }}>{filter.view} · showing {shown.length} of {allEvents.length} events{source === 'live' ? ' · times in your time zone' : ' · sample events'}</T>
 
       {shown.length === 0 ? (
         <Empty icon="calendar" title="No events match this filter" body="Try a different view, or include more impact levels, event types or currencies." action="Reset filter" onAction={() => setSetting('calFilter', DEFAULT_FILTER)} />

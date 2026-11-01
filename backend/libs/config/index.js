@@ -1,4 +1,7 @@
 const num = (v, d) => (v === undefined || v === '' || Number.isNaN(Number(v)) ? d : Number(v));
+// Accept the old EXPO_PUBLIC_ names too: the Savanai .env used them, and a key under the wrong
+// name used to switch its provider off without a word.
+const key = (env, name) => env[name] || env[`EXPO_PUBLIC_${name}`] || '';
 const bool = (v, d) => (v === undefined || v === '' ? d : ['1', 'true', 'yes'].includes(String(v).toLowerCase()));
 
 /** Read config lazily so tests can set process.env first. */
@@ -10,13 +13,13 @@ export function loadConfig(env = process.env) {
     corsOrigin: env.CORS_ORIGIN || '*',
     rateLimitPerMinute: num(env.RATE_LIMIT_PER_MINUTE, 120),
     twelveData: {
-      key: env.TWELVE_DATA_API_KEY || '',
+      key: key(env, 'TWELVE_DATA_API_KEY'),
       baseUrl: env.TWELVE_DATA_BASE_URL || 'https://api.twelvedata.com',
       chunkSize: num(env.TWELVE_DATA_CHUNK_SIZE, 8),
       pollIntervalMs: num(env.TWELVE_DATA_POLL_INTERVAL_MS, 15000),
     },
     finnhub: {
-      key: env.FINNHUB_API_KEY || '',
+      key: key(env, 'FINNHUB_API_KEY'),
       baseUrl: env.FINNHUB_BASE_URL || 'https://finnhub.io/api/v1',
       wsUrl: env.FINNHUB_WS_URL || 'wss://ws.finnhub.io',
     },
@@ -31,18 +34,26 @@ export function loadConfig(env = process.env) {
       cacheSeconds: num(env.NEWS_CACHE_SECONDS, 120),
       maxRecords: num(env.NEWS_MAX_RECORDS, 50),
     },
+    calendar: {
+      url: env.CALENDAR_URL || 'https://nfs.faireconomy.media/ff_calendar_thisweek.json',
+      cacheSeconds: num(env.CALENDAR_CACHE_SECONDS, 1800),
+    },
+    data: {
+      file: env.DATA_FILE || 'data/edgeline.db',   // SQLite file for accounts and journals; ':memory:' for throwaway runs
+      seedSample: bool(env.SEED_SAMPLE_DATA, true),  // new accounts start with the sample journal
+    },
     icons: {
       coingeckoBaseUrl: env.COINGECKO_BASE_URL || 'https://api.coingecko.com/api/v3',
-      coingeckoKey: env.COINGECKO_API_KEY || '',   // optional demo key; works without one at low limits
+      coingeckoKey: key(env, 'COINGECKO_API_KEY'),   // optional demo key; works without one at low limits
       cacheSeconds: num(env.ICON_CACHE_SECONDS, 86400),
     },
     ai: {
-      anthropicKey: env.ANTHROPIC_API_KEY || '',
+      anthropicKey: key(env, 'ANTHROPIC_API_KEY'),
       anthropicBaseUrl: env.ANTHROPIC_BASE_URL || 'https://api.anthropic.com/v1',
       anthropicVersion: env.ANTHROPIC_API_VERSION || '2023-06-01',
       model: env.ANTHROPIC_MODEL || 'claude-sonnet-5-5',
       maxTokens: num(env.ANTHROPIC_MAX_TOKENS, 1024),
-      freeAiKey: env.FREE_AI_API_KEY || '',
+      freeAiKey: key(env, 'FREE_AI_API_KEY'),
       freeAiBaseUrl: env.FREE_AI_BASE_URL || 'https://api.free.ai',
       freeAiModel: env.FREE_AI_MODEL || 'qwen7b',
       dailyQuota: num(env.AI_DAILY_QUOTA, 60),

@@ -3,6 +3,7 @@ import { View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { colors as c, getMode } from '../../../theme/tokens';
 import { Screen, PageTitle, T, Card, Row, Button, Empty, Disclaimer, Icon, useLayout } from '../../../components/ui';
+import { NewsCardsSkeleton } from '../../../components/ui/Skeletons';
 import FilterSheet, { FilterButton } from '../../../components/sheet/FilterSheet';
 import { useMarketNews } from '../hooks/useMarketNews';
 
@@ -78,7 +79,7 @@ export default function NewsScreen() {
   const [type, setType] = useState('All');
   const [attn, setAttn] = useState('All');
   const [filterOpen, setFilterOpen] = useState(false);
-  const { news } = useMarketNews();   // live from the backend, sample stories until it answers
+  const { news, loading } = useMarketNews();   // live from the backend, or the saved copy; skeleton until one of them answers
 
   const rows = useMemo(
     () => news.filter((n) => TYPE_RULES[type](n) && (attn === 'All' || n.relevance === attn)).sort((a, b) => RANK[a.relevance] - RANK[b.relevance]),
@@ -91,13 +92,19 @@ export default function NewsScreen() {
   return (
     <Screen>
       <PageTitle title="News" right={<FilterButton count={activeFilters} onPress={() => setFilterOpen(true)} />} />
-      <T v="caption" muted style={{ marginBottom: 12 }}>Showing {rows.length} stor{rows.length === 1 ? 'y' : 'ies'}{type !== 'All' ? ` · ${type}` : ''}{attn !== 'All' ? ` · ${attn} impact` : ''}</T>
-      {rows.length === 0 ? (
-        <Empty icon="file-text" title="No stories match these filters" body="Try a different type or impact level." action="Reset filters" onAction={reset} />
+      {loading ? (
+        <NewsCardsSkeleton n={6} />
       ) : (
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-          {rows.map((n) => <View key={n.id} style={wide ? { flexBasis: '48.5%', flexGrow: 1 } : { width: '100%' }}><NewsCard n={n} onAsk={() => ask(n)} /></View>)}
-        </View>
+        <>
+          <T v="caption" muted style={{ marginBottom: 12 }}>Showing {rows.length} stor{rows.length === 1 ? 'y' : 'ies'}{type !== 'All' ? ` · ${type}` : ''}{attn !== 'All' ? ` · ${attn} impact` : ''}</T>
+          {rows.length === 0 ? (
+            <Empty icon="file-text" title="No stories match these filters" body="Try a different type or impact level." action="Reset filters" onAction={reset} />
+          ) : (
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+              {rows.map((n) => <View key={n.id} style={wide ? { flexBasis: '48.5%', flexGrow: 1 } : { width: '100%' }}><NewsCard n={n} onAsk={() => ask(n)} /></View>)}
+            </View>
+          )}
+        </>
       )}
       <Disclaimer>AI summaries describe possible market channels, not price predictions. Always read the source.</Disclaimer>
 

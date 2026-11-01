@@ -19,7 +19,7 @@ function Item({ icon, label, onPress, first, count }) {
       <Icon name={icon} size={18} />
       <T v="h3" style={{ flex: 1, fontWeight: '500' }}>{label}</T>
       {count > 0 ? (
-        <View style={{ minWidth: 22, height: 22, borderRadius: 11, backgroundColor: c.blue, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 }}>
+        <View style={{ minWidth: 22, height: 22, borderRadius: 11, backgroundColor: c.red, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 }}>
           <Text style={{ fontSize: 12, fontWeight: '700', color: '#FFFFFF' }}>{count}</Text>
         </View>
       ) : null}

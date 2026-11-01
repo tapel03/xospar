@@ -1,10 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Pressable, Alert, Platform, Linking, Share } from 'react-native';
+import { View, Pressable, Alert, Platform, Linking, Share, Text } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { colors as c, themed, useMode, setMode } from '../../../theme/tokens';
 import { Screen, PageTitle, T, Card, Row, Segmented, Toggle, Badge, Button, Icon, AITag, Disclaimer, Sheet, Field, Mark, useLayout } from '../../../components/ui';
 import Dropdown from '../../../components/ui/Dropdown';
+import Avatar from '../../../components/ui/Avatar';
 import { useStore } from '../../../app/store';
+import { featureFlags } from '../../../app/config';
+import { priceSocket } from '../../../services/socket/PriceSocket';
 import { APP_NAME, APP_VERSION, APP_BUILD, CONTACT, STORE_URL, SUBSCRIPTIONS_URL, SHARE_MESSAGE, REQUIREMENTS, LANGUAGES, PLANS } from '../../../app/appInfo';
 
 /* ---------------- small building blocks ---------------- */
@@ -33,13 +36,24 @@ function Sub({ title, note, first, children }) {
   );
 }
 
-/** One connectable source. Off | On pill, the same style as the other option pickers. */
-function ConnRow({ icon, title, note, on, onToggle, last }) {
+/**
+ * One line of the Connections status list. It shows what is really happening (badge) and, when useful,
+ * a button to act on it. Nothing here is a fake switch: the badge always comes from real app state.
+ */
+function StatusRow({ icon, title, note, badge, kind = 'neutral', action, onAction, last }) {
   return (
-    <Row gap={12} style={[{ paddingVertical: 12 }, !last && { borderBottomWidth: 1, borderBottomColor: c.border }]}>
-      <Icon name={icon} />
-      <View style={{ flex: 1 }}><T v="h3">{title}</T><T v="small" muted>{note}</T></View>
-      <Segmented options={['Off', 'On']} value={on ? 'On' : 'Off'} onChange={(v) => { if ((v === 'On') !== on) onToggle(); }} />
+    <Row gap={12} style={[{ paddingVertical: 12, alignItems: 'flex-start' }, !last && { borderBottomWidth: 1, borderBottomColor: c.border }]}>
+      <View style={{ paddingTop: 2 }}><Icon name={icon} /></View>
+      <View style={{ flex: 1, gap: 2 }}>
+        <T v="h3">{title}</T>
+        <T v="small" muted>{note}</T>
+        {action ? (
+          <View style={{ alignSelf: 'flex-start', paddingTop: 6 }}>
+            <Button small variant="secondary" label={action} onPress={onAction} />
+          </View>
+        ) : null}
+      </View>
+      <Badge kind={kind} label={badge} />
     </Row>
   );
 }
@@ -64,6 +78,25 @@ function LinkRow({ icon, title, note, onPress, last, right }) {
   );
 }
 
+/**
+ * Red button for destructive actions. solid: filled red with white text. Otherwise a red outline.
+ * Colours are read inside the component so they follow the theme.
+ */
+function DangerButton({ label, icon, onPress, solid }) {
+  const fg = solid ? '#FFFFFF' : c.red;
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      style={({ pressed }) => [{ minHeight: 50, paddingHorizontal: 20, borderRadius: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: solid ? c.red : 'transparent', borderWidth: solid ? 0 : 1.5, borderColor: c.red }, pressed && { opacity: 0.75 }]}
+    >
+      <Icon name={icon} size={16} color={fg} />
+      <Text style={{ color: fg, fontWeight: '700', fontSize: 14 }}>{label}</Text>
+    </Pressable>
+  );
+}
+
 const SECTIONS = [
   { key: 'Account', icon: 'user' },
   { key: 'Connections', icon: 'link' },
@@ -80,6 +113,15 @@ const INTENSITY = ['Light', 'Balanced', 'Strict'];
 const INTENSITY_NOTE = { Light: 'Only flags clear rule breaks.', Balanced: 'Flags rule breaks and recurring patterns.', Strict: 'Flags every deviation, including timing and emotional state.' };
 const SEVERITY = ['Low', 'Medium', 'High', 'Off'];
 
+// Trade execution: what Edgeline is allowed to do on your MetaTrader accounts.
+const EXEC_MODES = ['Off', 'Demo only', 'Live'];
+const EXEC_NOTE = {
+  Off: 'Edgeline only reads your account and journals your trades. No orders are sent.',
+  'Demo only': 'Orders you confirm are sent to demo accounts only. Live accounts stay read-only.',
+  Live: 'Orders you confirm are sent to your accounts, including live accounts with real money.',
+};
+const BRIDGES = ['MetaApi (cloud)', 'My own terminal (VPS)'];
+
 function SeverityRow({ label, initial }) {
   const { settings, setSetting } = useStore();
   const key = `sev${label}`;
@@ -92,11 +134,19 @@ function SeverityRow({ label, initial }) {
   );
 }
 
+/** Real state of the live price stream, so the Connections list shows what is actually happening. */
+function usePriceStatus() {
+  const [status, setStatus] = useState(priceSocket.status);
+  useEffect(() => priceSocket.onStatus(setStatus), []);
+  return status;
+}
+
 export default function SettingsScreen() {
   const nav = useNavigation();
-  const { settings: st2, setSetting, profile, accounts, deleteAccount } = useStore();
+  const { settings: st2, setSetting, profile, accounts, deleteAccount, sync, trades, clearSampleData, reload } = useStore();
   const { wide } = useLayout();
   const mode = useMode();
+  const priceStatus = usePriceStatus();
   const [sec, setSec] = useState(null); // phones start on the list of sections; wide screens show Account
   const [msg, setMsg] = useState('');
   const [delOpen, setDelOpen] = useState(false);
@@ -106,10 +156,19 @@ export default function SettingsScreen() {
 
   const cur = wide ? (sec || 'Account') : sec;
   const val = (k, d) => (st2[k] === undefined ? d : st2[k]);
-  const flip = (k, d) => setSetting(k, !val(k, d));
   const plan = val('plan', 'Pro');
   const currentPlan = PLANS.find((p) => p.key === plan) || PLANS[1];
   const initial = ((profile.displayName || profile.name || '?').trim()[0] || '?').toUpperCase();
+
+  // Connections: everything below is worked out from real app state.
+  const execMode = val('execMode', 'Off');
+  const tradable = accounts.filter((a) => a.mode === 'Master');
+  const tradableLive = tradable.filter((a) => a.accountType === 'Live').length;
+  const connectedAccounts = accounts.filter((a) => a.status === 'Connected');
+  // Accounts that could really receive an order in the current mode.
+  const eligible = connectedAccounts.filter((a) => a.mode === 'Master' && (execMode === 'Live' || a.accountType !== 'Live'));
+  const syncBadge = sync.status === 'live' ? ['Live', 'pass'] : sync.status === 'loading' ? ['Connecting', 'neutral'] : ['Offline', 'warn'];
+  const priceBadge = !featureFlags.useBackend ? ['Off', 'neutral'] : priceStatus === 'connected' ? ['Live', 'pass'] : priceStatus === 'connecting' ? ['Connecting', 'neutral'] : priceStatus === 'idle' ? ['Idle', 'neutral'] : ['Reconnecting', 'warn'];
 
   const flash = (m) => {
     setMsg(m);
@@ -124,6 +183,15 @@ export default function SettingsScreen() {
   const choosePlan = (p) => {
     setSetting('plan', p.key);
     flash(`Switched to ${p.key}. Billing is not connected in this prototype, so nothing was charged.`);
+  };
+
+  // Turning on Live asks first, because orders then reach real-money accounts.
+  const changeExecMode = (v) => {
+    if (v !== 'Live' || Platform.OS === 'web') { setSetting('execMode', v); return; }
+    Alert.alert('Allow live trading?', 'Orders you confirm will be sent to your live MetaTrader accounts with real money. Test on a demo account first.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Allow live', style: 'destructive', onPress: () => setSetting('execMode', 'Live') },
+    ]);
   };
 
   // Clears the navigation history and returns to the start of the app, so Back cannot return to a signed-in screen.
@@ -144,13 +212,14 @@ export default function SettingsScreen() {
     setDelText('');
     nav.reset({ index: 0, routes: [{ name: 'Onboarding' }] });
   };
+  const askDelete = () => { setDelText(''); setDelOpen(true); };
 
   const body = {
     Account: (
       <View>
         <Sub first title="Profile">
           <Row gap={12} style={{ paddingVertical: 6 }}>
-            <View style={st.avatar}><T v="h2">{initial}</T></View>
+            <Avatar photo={profile.photo} initial={initial} size={56} />
             <View style={{ flex: 1 }}>
               <T v="h3">{profile.displayName || profile.name || 'Your name'}</T>
               <T v="small" muted numberOfLines={1}>{profile.email || 'No email added'}</T>
@@ -175,24 +244,59 @@ export default function SettingsScreen() {
           </Row>
         </Sub>
         <Sub title="Session">
-          <View style={{ paddingTop: 6 }}><Button variant="secondary" icon="log-out" label="Log out" onPress={logOut} /></View>
+          <View style={{ paddingTop: 6 }}><DangerButton solid icon="log-out" label="Log out" onPress={logOut} /></View>
+        </Sub>
+        <Sub title="Delete account" note="Removes your profile, journal, alerts, chats and connected broker accounts. This cannot be undone.">
+          <View style={{ paddingTop: 6 }}><DangerButton icon="trash-2" label="Delete account" onPress={askDelete} /></View>
         </Sub>
       </View>
     ),
     Connections: (
       <View>
-        <Sub first title="Data sources" note="Optional. Connecting lets the mentor review real fills.">
-          <ConnRow icon="link" title="Broker" note="Import fills automatically" on={val('connBroker', false)} onToggle={() => flip('connBroker', false)} />
-          <ConnRow icon="credit-card" title="Trading account" note="Balance, equity and drawdown" on={val('connAccount', false)} onToggle={() => flip('connAccount', false)} />
-          <ConnRow icon="briefcase" title="Portfolio" note="Longer-term holdings for exposure checks" on={val('connPortfolio', false)} onToggle={() => flip('connPortfolio', false)} />
-          <ConnRow icon="edit-3" title="Manual journal" note="Log trades yourself. You can connect later." on={val('connManual', true)} onToggle={() => flip('connManual', true)} last />
+        <Sub first title="Status" note="What Edgeline is connected to right now. These update by themselves.">
+          <StatusRow
+            icon="cloud"
+            title="Your Edgeline account"
+            note={sync.status === 'live' ? 'Journal, alerts, strategies and chats are saved to your account.' : sync.status === 'loading' ? 'Connecting to your account…' : `Changes are not being saved.${sync.error ? ` (${sync.error})` : ''}`}
+            badge={syncBadge[0]}
+            kind={syncBadge[1]}
+            action={sync.status === 'offline' ? 'Try again' : undefined}
+            onAction={reload}
+          />
+          <StatusRow
+            icon="activity"
+            title="Live prices"
+            note={featureFlags.useBackend ? 'Streams prices into Markets and your charts while the app is open.' : 'Turned off. The app is showing sample prices.'}
+            badge={priceBadge[0]}
+            kind={priceBadge[1]}
+          />
+          <StatusRow
+            icon="edit-3"
+            title="Manual journal"
+            note={`Always available. ${trades.length} trade${trades.length === 1 ? '' : 's'} logged.`}
+            badge="On"
+            kind="pass"
+            action="Add trade"
+            onAction={() => nav.navigate('AddTrade')}
+          />
+          <StatusRow
+            icon="link"
+            title="Broker accounts"
+            note={accounts.length === 0 ? 'None added. Add MT4 or MT5 to import fills and balance.' : `${connectedAccounts.length} of ${accounts.length} connected. Fills are imported once the broker bridge is live.`}
+            badge={connectedAccounts.length ? 'Connected' : accounts.length ? 'Disconnected' : 'Not set up'}
+            kind={connectedAccounts.length ? 'pass' : 'neutral'}
+            action={accounts.length ? 'Manage accounts' : 'Add account'}
+            onAction={() => nav.navigate('ManageAccounts', accounts.length ? undefined : { add: true, ts: Date.now() })}
+            last
+          />
         </Sub>
+
         <Sub title="Trading accounts" note="Your MetaTrader 4 and 5 accounts.">
           {accounts.length === 0 ? <T v="small" muted style={{ paddingVertical: 8 }}>No accounts added yet.</T> : accounts.map((a) => (
             <Row key={a.id} style={{ justifyContent: 'space-between', paddingVertical: 8 }} gap={10}>
               <View style={{ flex: 1 }}>
                 <T v="h3" numberOfLines={1}>{a.nickname || a.platform}</T>
-                <T v="small" muted numberOfLines={1}>{a.platform} · {a.login} · {a.mode === 'Master' ? 'Master password' : 'Read-only'}</T>
+                <T v="small" muted numberOfLines={1}>{a.platform} · {a.login} · {a.accountType || 'Demo'} · {a.mode === 'Master' ? 'Can trade' : 'Read-only'}</T>
               </View>
               <Badge kind={a.status === 'Connected' ? 'pass' : 'neutral'} label={a.status} />
             </Row>
@@ -201,6 +305,60 @@ export default function SettingsScreen() {
             <Button icon="settings" label="Manage accounts" onPress={() => nav.navigate('ManageAccounts')} />
             <Button variant="secondary" icon="plus" label="Add account" onPress={() => nav.navigate('ManageAccounts', { add: true, ts: Date.now() })} />
           </Row>
+        </Sub>
+
+        <Sub title="Trade execution" note="Lets Edgeline send the trades you confirm to your MetaTrader account, like a personal trading bot.">
+          <View style={{ paddingVertical: 8, gap: 8 }}>
+            <T v="h3" style={{ fontWeight: '500' }}>Execution mode</T>
+            <T v="small" muted>{EXEC_NOTE[execMode] || EXEC_NOTE.Off}</T>
+            <Segmented options={EXEC_MODES} value={execMode} onChange={changeExecMode} />
+          </View>
+
+          {execMode === 'Live' ? (
+            <View style={{ padding: 12, borderRadius: 12, borderWidth: 2, borderColor: c.red, gap: 4, marginVertical: 6 }}>
+              <T v="small" bold>⚠  Live trading is on</T>
+              <T v="small">{tradableLive > 0 ? `${tradableLive} live account${tradableLive === 1 ? '' : 's'} can receive real orders.` : 'No live account has trading access yet.'} Keep confirmations on while you test.</T>
+            </View>
+          ) : null}
+
+          {/* These options only matter once execution is on, so they stay hidden while it is Off. */}
+          {execMode !== 'Off' ? (
+            <>
+              <Row style={{ justifyContent: 'space-between', alignItems: 'flex-start', paddingVertical: 6 }} gap={12}>
+                <View style={{ flex: 1, paddingTop: 10 }}>
+                  <T v="h3" style={{ fontWeight: '500' }}>Connection bridge</T>
+                  <T v="small" muted>The service that links Edgeline to MT4 and MT5.</T>
+                </View>
+                <Dropdown label="Connection bridge" width={190} value={val('bridge', BRIDGES[0])} options={BRIDGES} onChange={(v) => setSetting('bridge', v)} />
+              </Row>
+
+              <Toggle label="Confirm every order" detail="Show a final confirmation before an order is sent. Recommended." value={val('execConfirm', true)} onChange={(v) => setSetting('execConfirm', v)} />
+              <Toggle label="Block orders that break my risk rules" detail="Orders above your risk, lot or position limits (see Risk) are not sent." value={val('execEnforce', true)} onChange={(v) => setSetting('execEnforce', v)} />
+
+              <Row gap={12} style={{ justifyContent: 'space-between', paddingVertical: 8 }}>
+                <View style={{ flex: 1 }}>
+                  <T v="h3" style={{ fontWeight: '500' }}>Ready to trade</T>
+                  <T v="small" muted>
+                    {eligible.length
+                      ? `${eligible.length} connected account${eligible.length === 1 ? '' : 's'} can receive orders in this mode.`
+                      : tradable.length === 0
+                        ? 'No account has a master password yet. Trading needs one.'
+                        : connectedAccounts.length === 0
+                          ? 'No account is connected. Connect one in Manage accounts.'
+                          : execMode === 'Demo only' ? 'No connected demo account has trading access.' : 'No connected account has trading access.'}
+                  </T>
+                </View>
+                <Badge kind={eligible.length ? 'pass' : 'warn'} label={eligible.length ? 'Ready' : 'Not ready'} />
+              </Row>
+              {!eligible.length ? (
+                <View style={{ alignSelf: 'flex-start', paddingTop: 4 }}>
+                  <Button small variant="secondary" icon={tradable.length ? 'link' : 'plus'} label={tradable.length ? 'Connect an account' : 'Add a trading account'} onPress={() => nav.navigate('ManageAccounts', tradable.length ? undefined : { add: true, ts: Date.now() })} />
+                </View>
+              ) : null}
+            </>
+          ) : null}
+
+          <Disclaimer>Orders are not sent yet in this prototype. These settings control how the feature will behave once your broker connection is switched on. Start on a demo account.</Disclaimer>
         </Sub>
       </View>
     ),
@@ -250,6 +408,10 @@ export default function SettingsScreen() {
           <Stepper label="Maximum open positions" value={st2.maxPositions} step={1} min={1} max={10} onChange={(v) => setSetting('maxPositions', v)} />
           <Stepper label="Maximum correlated exposure" detail="Positions with |r| ≥ 0.70 in the same direction" value={st2.maxCorrelated} step={1} min={1} max={6} onChange={(v) => setSetting('maxCorrelated', v)} />
         </Sub>
+        <Sub title="Order limits" note="Safety limits for trades sent to your broker account.">
+          <Stepper label="Maximum lot size per order" detail="Orders above this size are blocked" value={val('maxLots', 1)} step={0.1} min={0.1} max={20} onChange={(v) => setSetting('maxLots', v)} />
+          <Toggle label="Require a stop loss" detail="Orders without a stop loss are not sent" value={val('requireStop', true)} onChange={(v) => setSetting('requireStop', v)} />
+        </Sub>
       </View>
     ),
     'AI mentor': (
@@ -292,6 +454,7 @@ export default function SettingsScreen() {
         <Sub first title="Security">
           <Toggle label="Two-factor authentication" value={val('twoFactor', true)} onChange={(v) => setSetting('twoFactor', v)} />
           <Toggle label="Biometric unlock" value={val('biometric', false)} onChange={(v) => setSetting('biometric', v)} />
+          <Toggle label="Biometrics before live orders" detail="Ask for Face ID or fingerprint before an order is sent to a live account" value={val('biometricOrders', true)} onChange={(v) => setSetting('biometricOrders', v)} />
         </Sub>
         <Sub title="Data and privacy">
           <Toggle label="Use my journal to personalise the mentor" value={val('personalise', true)} onChange={(v) => setSetting('personalise', v)} />
@@ -299,10 +462,22 @@ export default function SettingsScreen() {
           <LinkRow icon="key" title="Saved broker passwords" note="View, save or clear them" onPress={() => nav.navigate('ManageAccounts')} />
           <LinkRow icon="shield" title="Privacy policy" onPress={() => nav.navigate('Legal', { doc: 'privacy' })} last />
         </Sub>
+        <Sub title="Sync">
+          <T v="small" muted>
+            {sync.status === 'live'
+              ? 'Your journal, alerts, strategies, chats and settings are saved to your Edgeline account.'
+              : sync.status === 'loading' ? 'Connecting to your account…'
+              : `Offline. The app is showing sample data and changes are not saved.${sync.error ? ` (${sync.error})` : ''}`}
+          </T>
+          <Row style={{ flexWrap: 'wrap', paddingTop: 8 }} gap={8}>
+            {sync.status !== 'live' ? <Button small variant="secondary" icon="refresh-cw" label="Try again" onPress={reload} /> : null}
+            {sync.status === 'live' && trades.some((t) => t.sample) ? <Button small variant="secondary" icon="trash-2" label="Remove sample trades and alerts" onPress={clearSampleData} /> : null}
+          </Row>
+        </Sub>
         <Sub title="Your account">
-          <T v="small" muted>Deleting your account signs you out and removes your profile, chats and connected broker accounts from this device.</T>
+          <T v="small" muted>Deleting your account removes your profile, journal, alerts, chats and connected broker accounts from Edgeline, then starts a fresh one.</T>
           <View style={{ paddingTop: 8, alignSelf: 'flex-start' }}>
-            <Button variant="secondary" icon="trash-2" label="Delete account" onPress={() => { setDelText(''); setDelOpen(true); }} />
+            <DangerButton icon="trash-2" label="Delete account" onPress={askDelete} />
           </View>
         </Sub>
       </View>
@@ -370,7 +545,7 @@ export default function SettingsScreen() {
       footer={(
         <Row style={{ justifyContent: 'flex-end' }}>
           <Button variant="ghost" label="Cancel" onPress={() => setDelOpen(false)} />
-          <Button label="Delete my account" icon="trash-2" disabled={!canDelete} onPress={doDelete} />
+          <DangerButton solid icon="trash-2" label="Delete my account" onPress={doDelete} />
         </Row>
       )}
     >
@@ -379,6 +554,7 @@ export default function SettingsScreen() {
         <T v="small">Your profile, mentor chats and connected broker accounts, including any saved passwords, will be removed from this device and you will be signed out.</T>
       </View>
       <Field label="Type DELETE to confirm" value={delText} onChangeText={setDelText} autoCapitalize="characters" autoCorrect={false} style={{ flexBasis: 'auto', flexGrow: 0 }} />
+      {!canDelete ? <T v="caption" muted>The delete button works once you have typed DELETE.</T> : null}
     </Sheet>
   );
 
@@ -395,7 +571,7 @@ export default function SettingsScreen() {
         <PageTitle title="Settings" />
         <Card pad={0} onPress={() => nav.navigate('EditProfile')} style={{ marginBottom: 16 }}>
           <Row gap={12} style={{ padding: 16 }}>
-            <View style={st.avatar}><T v="h2">{initial}</T></View>
+            <Avatar photo={profile.photo} initial={initial} size={48} />
             <View style={{ flex: 1 }}>
               <T v="h3" numberOfLines={1}>{profile.displayName || profile.name || 'Your name'}</T>
               <T v="small" muted numberOfLines={1}>{profile.email || 'Add your email'}</T>
@@ -442,5 +618,4 @@ export default function SettingsScreen() {
 
 const st = themed(() => ({
   step: { width: 36, height: 36, borderRadius: 10, borderWidth: 1, borderColor: c.border, alignItems: 'center', justifyContent: 'center' },
-  avatar: { width: 48, height: 48, borderRadius: 24, borderWidth: 1, borderColor: c.borderStrong, alignItems: 'center', justifyContent: 'center' },
 }));

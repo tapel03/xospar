@@ -3,7 +3,7 @@ import { View, Pressable } from 'react-native';
 import { Sheet, T, Row, Chip, Segmented, Field, Button, Icon } from '../../../components/ui';
 import { colors as c } from '../../../theme/tokens';
 import { useStore } from '../../../app/store';
-import { assetBy, fmtPrice, strategies } from '../../../mocks/mock';
+import { assetBy, fmtPrice } from '../../../mocks/mock';
 
 const CONDS = {
   zone: ['Enters zone', 'Exits zone', 'Returns to zone'],
@@ -31,7 +31,7 @@ function Option({ title, summary, open, onToggle, children }) {
 
 /** Manual alerts never depend on AI: they fire on price alone. */
 export default function CreateAlertSheet({ visible, onClose, asset = 'EUR/USD', drawing, onCreated, editing }) {
-  const { addAlert, updateAlert } = useStore();
+  const { addAlert, updateAlert, strategies } = useStore();
   const kind = drawing ? drawing.type : 'price';
   const [sym, setSym] = useState(asset);
   const [cond, setCond] = useState(CONDS[kind][0]);

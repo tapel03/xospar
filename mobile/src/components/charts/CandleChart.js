@@ -3,10 +3,11 @@ import { View, Pressable, Text } from 'react-native';
 import Svg, { Line, Rect, Polyline, Polygon, G, ClipPath, Text as SvgText, Defs, LinearGradient, Stop } from 'react-native-svg';
 import { colors as c, mono } from '../../theme/tokens';
 
-const AX = 60; // right-hand price axis width
-const BOTTOM = 30; // bottom time axis height
+const AX = 52; // right-hand price axis width
+const GAP = 0; // no space between the chart border and the price column: they share one edge
+const BOTTOM = 30; // space under the chart box for the time labels (outside the border)
 const DASH = { solid: undefined, dashed: '6 4', dotted: '2 3' };
-const TF_MIN = { '1m': 1, '5m': 5, '15m': 15, '1H': 60, '4H': 240, '1D': 1440, '1W': 10080 };
+const TF_MIN = { '1m': 1, '5m': 5, '15m': 15, '1H': 60, '4H': 240, '1D': 1440, '1W': 10080, '1M': 43200 };
 const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const MIN_VIS = 8; // most zoomed in: 8 candles on screen
 const MAX_VIS = 300; // most zoomed out
@@ -56,7 +57,9 @@ function PriceTag({ top, color, price, tfMin, count }) {
 
 /**
  * Price chart: candles, bars, line or area, with zones, horizontal levels and event markers.
- * Shows a time axis along the bottom and the current price with a candle countdown on the right.
+ * Layout: one bordered box holds the candles. The time labels sit just under the box, outside its border.
+ * The price column shares the box's right edge and runs to the right wall, with no space between them.
+ * The box starts exactly at `topInset`, so there is no space between the screen's top bar and the chart.
  * Gestures (when the chart is interactive and the cursor tool is active):
  *   drag            pan left/right through time and up/down through price (up/down only when "free movement" is on)
  *   pinch           zoom the time axis (candles get wider or narrower)
@@ -98,11 +101,14 @@ export default function CandleChart({
   const tfMin = TF_MIN[tf] || 60;
   const Mms = tfMin * 60000;
   const base = useMemo(() => Math.floor(Date.now() / Mms) * Mms, [Mms]); // open time of the newest candle
-  const padTop = topInset + 8;
-  const padBottom = BOTTOM;
+  // The box border sits at padTop - 4, which is exactly topInset. The same rule applies in normal and full screen,
+  // so the chart always starts right under whatever is above it.
+  const padTop = topInset + 4;
   const plotW = Math.max(0, w - AX);
-  const ph = Math.max(10, height - padTop - padBottom);
-  const axisY = padTop + ph;
+  const ph = Math.max(10, height - padTop - BOTTOM);
+  const axisY = padTop + ph; // bottom edge of the chart box
+  const boxTop = padTop - 4; // top edge of the chart box and the price column
+  const boxRight = Math.max(0, plotW - GAP); // right edge of the chart box
 
   // New data: start from the full view again.
   const firstO = n ? candles[0].o : 0;
@@ -359,7 +365,7 @@ export default function CandleChart({
                 <Stop offset="1" stopColor={upC} stopOpacity="0" />
               </LinearGradient>
               <ClipPath id={cid}>
-                <Rect x={0} y={0} width={plotW} height={axisY} />
+                <Rect x={0} y={0} width={boxRight} height={axisY} />
               </ClipPath>
             </Defs>
 
@@ -367,19 +373,18 @@ export default function CandleChart({
             {ticks.map((v, i) => (
               inPlotY(yAt(v)) ? (
                 <React.Fragment key={i}>
-                  {P.grid ? <Line x1={0} x2={plotW} y1={yAt(v)} y2={yAt(v)} stroke={c.border} strokeDasharray="2 5" /> : null}
+                  {P.grid ? <Line x1={0} x2={boxRight} y1={yAt(v)} y2={yAt(v)} stroke={c.border} strokeDasharray="2 5" /> : null}
                   <SvgText x={plotW + 6} y={yAt(v) + 4} fill={c.muted} fontSize={10} fontFamily={mono}>{fmt(v)}</SvgText>
                 </React.Fragment>
               ) : null
             ))}
 
-            {/* time axis */}
-            <Line x1={0} x2={plotW} y1={axisY} y2={axisY} stroke={c.border} />
+            {/* time axis: tick marks hang below the box, labels sit under it, outside the border */}
             {timeTicks.map((i) => (
               <React.Fragment key={`t${i}`}>
                 {P.grid ? <Line x1={xAt(i)} x2={xAt(i)} y1={padTop} y2={axisY} stroke={c.border} strokeOpacity={0.45} strokeDasharray="2 6" /> : null}
                 <Line x1={xAt(i)} x2={xAt(i)} y1={axisY} y2={axisY + 4} stroke={c.borderStrong} />
-                <SvgText x={xAt(i)} y={axisY + 17} fill={c.muted} fontSize={10} fontFamily={mono} textAnchor="middle">{timeLabel(i)}</SvgText>
+                <SvgText x={xAt(i)} y={axisY + 18} fill={c.muted} fontSize={10} fontFamily={mono} textAnchor="middle">{timeLabel(i)}</SvgText>
               </React.Fragment>
             ))}
 
@@ -475,7 +480,7 @@ export default function CandleChart({
                 const w0 = Math.max(0, plotW - x0);
                 const slInside = posY.s > posY.e ? posY.s - 5 : posY.s + 13;
                 const tpInside = posY.t > posY.e ? posY.t - 5 : posY.t + 13;
-                const gx = plotW - 66;
+                const gx = boxRight - 66;
                 const gripS = active === 'stop'; const gripT = active === 'target';
                 return (
                   <>
@@ -500,8 +505,8 @@ export default function CandleChart({
               {showAlert ? (
                 <>
                   <Line x1={0} x2={plotW} y1={alertY} y2={alertY} stroke={c.blue} strokeWidth={gripA ? 3 : 1.75} strokeDasharray="6 4" />
-                  <Rect x={plotW - 78} y={alertY - 10} width={72} height={20} rx={6} fill={c.blue} fillOpacity={gripA ? 1 : 0.9} stroke={gripA ? c.white : 'none'} strokeWidth={1.5} />
-                  <SvgText x={plotW - 42} y={alertY + 4} fill="#FFFFFF" fontSize={10} fontWeight="800" textAnchor="middle">≡ ALERT</SvgText>
+                  <Rect x={boxRight - 78} y={alertY - 10} width={72} height={20} rx={6} fill={c.blue} fillOpacity={gripA ? 1 : 0.9} stroke={gripA ? c.white : 'none'} strokeWidth={1.5} />
+                  <SvgText x={boxRight - 42} y={alertY + 4} fill="#FFFFFF" fontSize={10} fontWeight="800" textAnchor="middle">≡ ALERT</SvgText>
                 </>
               ) : null}
 
@@ -559,7 +564,7 @@ export default function CandleChart({
             {/* crosshair */}
             {cross ? (
               <>
-                <Line x1={0} x2={plotW} y1={cross.y} y2={cross.y} stroke={c.muted} strokeDasharray="3 3" />
+                <Line x1={0} x2={boxRight} y1={cross.y} y2={cross.y} stroke={c.muted} strokeDasharray="3 3" />
                 {tool === 'crosshair' ? <Line x1={cross.x} x2={cross.x} y1={padTop} y2={axisY} stroke={c.muted} strokeDasharray="3 3" /> : null}
                 <Rect x={plotW + 1} y={cross.y - 9} width={AX - 2} height={18} rx={4} fill={c.white} />
                 <SvgText x={plotW + 6} y={cross.y + 4} fill={c.black} fontSize={10} fontWeight="700" fontFamily={mono}>{fmt(priceAt(cross.y))}</SvgText>
@@ -571,6 +576,13 @@ export default function CandleChart({
                 ) : null}
               </>
             ) : null}
+
+            {/* chart box: encloses the candles only. It starts at the left wall, and the time labels sit below it */}
+            <Rect x={0.5} y={boxTop + 0.5} width={Math.max(0, plotW - 0.5)} height={Math.max(0, axisY - boxTop - 0.5)} fill="none" stroke={c.borderStrong} strokeWidth={1} />
+
+            {/* price column: shares the chart box's right edge, then closes at the top and runs to the right wall. No bottom line */}
+            <Line x1={plotW} x2={w - 0.5} y1={boxTop + 0.5} y2={boxTop + 0.5} stroke={c.borderStrong} strokeWidth={1} />
+            <Line x1={w - 0.5} x2={w - 0.5} y1={boxTop + 0.5} y2={axisY} stroke={c.borderStrong} strokeWidth={1} />
           </Svg>
 
           {/* pan and zoom layer: sits under the markers and is replaced by the drawing layer when a drawing tool is active */}
@@ -596,7 +608,7 @@ export default function CandleChart({
 
           {/* OHLC readout at the top left of the chart: the last candle, or the candle under the crosshair */}
           {P.ohlc && pannable && readK ? (
-            <View pointerEvents="none" style={{ position: 'absolute', left: 56, top: topInset + 2, flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+            <View pointerEvents="none" style={{ position: 'absolute', left: 56, top: topInset + 6, flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
               {[['O', readK.o], ['H', readK.h], ['L', readK.l], ['C', readK.c]].map(([k, v]) => (
                 <Text key={k} style={{ color: readCol, fontFamily: mono, fontSize: 11, fontWeight: '700' }}>{k} {fmt(v)}</Text>
               ))}

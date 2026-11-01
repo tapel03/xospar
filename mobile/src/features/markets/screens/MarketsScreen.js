@@ -122,7 +122,7 @@ function Price({ a, k, value, color }) {
   );
 }
 
-/** Swipe a row to the left to remove it. A red strip shows behind the row while dragging. */
+/** Swipe a row to the left to remove it. A red strip shows behind the row while dragging. The row blends with the page background. */
 function SwipeRow({ children, onRemove, wide }) {
   const x = useRef(new Animated.Value(0)).current;
   const width = useRef(320);
@@ -157,13 +157,17 @@ function SwipeRow({ children, onRemove, wide }) {
           <T v="small" bold style={{ color: c.red }}>Remove</T>
         </Row>
       </View>
-      <Animated.View style={{ backgroundColor: c.surface, transform: [{ translateX: x }] }} {...pan.current.panHandlers}>
+      <Animated.View style={{ backgroundColor: c.bg, transform: [{ translateX: x }] }} {...pan.current.panHandlers}>
         {children}
       </Animated.View>
     </View>
   );
 }
 
+/**
+ * One market row. No borders, no background: it blends with the page.
+ * Left: points and percent, the symbol, then time and spread. Right: bid and ask, with the low under the bid and the high under the ask.
+ */
 function QuoteRow({ a, onPress }) {
   const k = quote(a);
   const up = a.chg >= 0;
@@ -171,32 +175,33 @@ function QuoteRow({ a, onPress }) {
   return (
     <Pressable
       onPress={onPress}
-      style={({ pressed }) => [{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 7 }, pressed && { backgroundColor: c.elevated }]}
+      style={({ pressed }) => [{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 14 }, pressed && { opacity: 0.7 }]}
     >
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flexShrink: 1 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flexShrink: 1 }}>
         <AssetIcon a={a} />
-        <View style={{ gap: 0, flexShrink: 1 }}>
-          <Row gap={6}>
+        <View style={{ gap: 2, flexShrink: 1 }}>
+          <Row gap={8}>
             <T v="caption" muted mono>{k.points > 0 ? '+' : ''}{k.points}</T>
             <T v="caption" mono style={{ color: col, fontWeight: '600' }}>{up ? '+' : '−'}{Math.abs(a.chg).toFixed(2)}%</T>
           </Row>
-          <T v="h2" style={{ fontWeight: '700', fontSize: 16, lineHeight: 20 }}>{a.sym.replace('/', '')}</T>
+          <T v="h2" style={{ fontWeight: '700', fontSize: 17, lineHeight: 22 }}>{a.sym.replace('/', '')}</T>
           <Row gap={6}>
             <Clock />
             <T v="caption" muted>↔ {k.spreadPts}</T>
           </Row>
         </View>
       </View>
-      <View style={{ alignItems: 'flex-end', gap: 2 }}>
-        <Row gap={16} style={{ alignItems: 'flex-start' }}>
+
+      <Row gap={18} style={{ alignItems: 'flex-start' }}>
+        <View style={{ alignItems: 'flex-end', gap: 4 }}>
           <Price a={a} k={k} value={k.bid} color={col} />
-          <Price a={a} k={k} value={k.ask} color={col} />
-        </Row>
-        <Row gap={14}>
           <T v="caption" muted mono>L: {fmtQ(a, k, k.low)}</T>
+        </View>
+        <View style={{ alignItems: 'flex-end', gap: 4 }}>
+          <Price a={a} k={k} value={k.ask} color={col} />
           <T v="caption" muted mono>H: {fmtQ(a, k, k.high)}</T>
-        </Row>
-      </View>
+        </View>
+      </Row>
     </Pressable>
   );
 }
@@ -304,7 +309,7 @@ export default function MarketsScreen() {
       {mine.length === 0 ? (
         <Empty icon="plus-circle" title="Your list is empty" body="Tap the pen at the top to add pairs, stocks, commodities or crypto." action="Add markets" onAction={() => setEditing(true)} />
       ) : (
-        <Card pad={0} style={{ borderWidth: 0, shadowOpacity: 0, shadowRadius: 0, elevation: 0 }}>
+        <Card pad={0} style={{ backgroundColor: 'transparent', borderWidth: 0, shadowOpacity: 0, shadowRadius: 0, elevation: 0 }}>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
             {mine.map((a) => (
               <SwipeRow key={a.sym} wide={wide} onRemove={() => removeMarket(a.sym)}>

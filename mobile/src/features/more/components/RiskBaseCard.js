@@ -3,7 +3,6 @@ import { View } from 'react-native';
 import { colors as c } from '../../../theme/tokens';
 import { T, Card, Row, Field, Segmented, Button, Disclaimer } from '../../../components/ui';
 import { useStore } from '../../../app/store';
-import { account } from '../../../mocks/mock';
 import { riskBaseOf, usd } from '../../trading/risk';
 
 const num = (s) => parseFloat(String(s).replace(',', '.'));
@@ -16,7 +15,7 @@ const trim = (v) => String(Number(Number(v).toFixed(2)));
  * Per-trade risk and daily loss can be typed as a percent or as a dollar amount.
  */
 export default function RiskBaseCard() {
-  const { settings, setSetting } = useStore();
+  const { settings, setSetting, account } = useStore();
   const saved = riskBaseOf(settings, account.equity);
   const [unit, setUnit] = useState('%');
   const [base, setBase] = useState(String(saved));

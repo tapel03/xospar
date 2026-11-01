@@ -10,13 +10,16 @@ import ColorPicker from '../../../components/ui/ColorPicker';
 import CreateAlertSheet from '../../alerts/components/CreateAlertSheet';
 import { T, Card, Row, Segmented, Delta, Icon, Button, AITag, CheckRow, Disclaimer, Chip, Bar, Sheet, Field, Stat, signed, useLayout } from '../../../components/ui';
 import { KV } from '../../../components/domain';
-import { assetBy, fmtPrice, makeCandles, news, upcomingEvents, strategies, account } from '../../../mocks/mock';
+import { assetBy, fmtPrice, makeCandles } from '../../../mocks/mock';
+import { useMarketNews } from '../../news/hooks/useMarketNews';
+import { useEconomicCalendar } from '../../calendar/hooks/useEconomicCalendar';
 import { correlationMatrix, corrSyms } from '../data/correlation';
 import { vpu, sizeDec, sizeUnit, usd, positionMoney, riskBaseOf } from '../../trading/risk';
 import { useStore } from '../../../app/store';
 
 const AMBER = '#F5B54A';
-const TFS = ['1m', '5m', '15m', '1H', '4H', '1D', '1W'];
+// '1m' is one minute, '1M' is one month.
+const TFS = ['1m', '5m', '15m', '1H', '4H', '1D', '1W', '1M'];
 const CHART_TYPES = [['candles', 'Candles', 'bar-chart-2'], ['line', 'Line', 'trending-up']];
 // Simulated spread per market type, used only to draw the ask line. Replace with a real ask from the feed.
 const SPREAD = { Forex: 0.00009, Commodities: 0.00015, Indices: 0.0002, Stocks: 0.0003, Crypto: 0.0004 };
@@ -46,6 +49,8 @@ const MENU = [
   ['corr', 'Correlations', 'hash', 'What moves with or against it'],
   ['sent', 'Sentiment', 'thermometer', 'Positioning, options, news tone'],
 ];
+// Menu cards drawn inverted (white in dark mode, dark in light mode), like the Overview page.
+const INVERTED = ['chart', 'edge', 'trade'];
 
 // Chart settings list: [key, title, description]. Each one is a checkbox.
 const PREF_ROWS = [
@@ -114,7 +119,10 @@ function SessionLine({ always }) {
   );
 }
 
-/** One item inside the top bar. Flat and transparent so the bar blends into the chart. `fit` keeps it compact instead of stretching. */
+/**
+ * One item inside the top bar. It has no border: the active one (on) is shown by a lifted background and bright text.
+ * `fit` keeps it compact instead of stretching.
+ */
 function TBtn({ icon, label, on, onPress, a11y, fit }) {
   return (
     <Pressable
@@ -122,7 +130,7 @@ function TBtn({ icon, label, on, onPress, a11y, fit }) {
       accessibilityRole="button"
       accessibilityLabel={a11y || label}
       accessibilityState={{ selected: !!on }}
-      style={({ pressed }) => [{ flex: fit ? 0 : 1, minWidth: fit ? 64 : undefined, minHeight: 44, paddingHorizontal: fit ? 14 : 6, borderRadius: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: on ? 'rgba(255,255,255,0.10)' : 'transparent' }, pressed && { opacity: 0.6 }]}
+      style={({ pressed }) => [{ flex: fit ? 0 : 1, minWidth: fit ? 64 : undefined, minHeight: 44, paddingHorizontal: fit ? 14 : 6, borderRadius: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: on ? c.elevated2 : 'transparent' }, pressed && { opacity: 0.6 }]}
     >
       {icon ? <Icon name={icon} size={16} color={on ? c.white : c.text} /> : null}
       {label ? <Text numberOfLines={1} style={{ color: on ? c.white : c.text, fontWeight: '700', fontSize: 13, flexShrink: 1 }}>{label}</Text> : null}
@@ -130,7 +138,10 @@ function TBtn({ icon, label, on, onPress, a11y, fit }) {
   );
 }
 
-/** One choice shown when the top bar switches to the chart type or timeframe picker. */
+/**
+ * One choice shown when the top bar switches to the chart type or timeframe picker. Each takes an equal share of the width, so nothing scrolls.
+ * No border: the selected choice has a lifted background and bright text.
+ */
 function OptBtn({ icon, label, on, onPress }) {
   return (
     <Pressable
@@ -138,16 +149,20 @@ function OptBtn({ icon, label, on, onPress }) {
       accessibilityRole="button"
       accessibilityState={{ selected: !!on }}
       accessibilityLabel={label}
-      style={({ pressed }) => [{ minHeight: 40, paddingHorizontal: 14, borderRadius: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: on ? 'rgba(255,255,255,0.14)' : 'transparent' }, pressed && { opacity: 0.6 }]}
+      style={({ pressed }) => [{ flex: 1, minWidth: 0, minHeight: 40, paddingHorizontal: 0, borderRadius: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: on ? c.elevated2 : 'transparent' }, pressed && { opacity: 0.6 }]}
     >
       {icon ? <Icon name={icon} size={16} color={on ? c.white : c.muted} /> : null}
-      <Text style={{ color: on ? c.white : c.muted, fontWeight: on ? '800' : '600', fontSize: 14 }}>{label}</Text>
+      <Text numberOfLines={1} style={{ color: on ? c.white : c.muted, fontWeight: on ? '800' : '600', fontSize: 13 }}>{label}</Text>
     </Pressable>
   );
 }
 
-/** One card in the chart menu. `full` makes it span the whole width of the modal's content area (the modal's own padding stays). */
-function MenuCard({ icon, title, sub, onPress, full }) {
+/**
+ * One card in the chart menu. `full` makes it span the whole width of the modal's content area (the modal's own padding stays).
+ * `inverted` draws it white in dark mode and dark in light mode, the same as the Overview page.
+ */
+function MenuCard({ icon, title, sub, onPress, full, inverted }) {
+  const fg = inverted ? c.black : c.text;
   return (
     <Pressable
       onPress={onPress}
@@ -155,19 +170,22 @@ function MenuCard({ icon, title, sub, onPress, full }) {
       accessibilityLabel={title}
       style={({ pressed }) => [
         full
-          ? { width: '100%', minHeight: 88, padding: 14, borderRadius: 18, borderWidth: 1, borderColor: c.border, backgroundColor: c.elevated, flexDirection: 'row', alignItems: 'center', gap: 14 }
-          : { flexGrow: 1, flexBasis: '46%', minHeight: 112, padding: 14, borderRadius: 18, borderWidth: 1, borderColor: c.border, backgroundColor: c.elevated, justifyContent: 'space-between', gap: 10 },
-        pressed && { opacity: 0.75, backgroundColor: c.elevated2 },
+          ? { width: '100%', minHeight: 88, padding: 14, borderRadius: 18, borderWidth: 1, flexDirection: 'row', alignItems: 'center', gap: 14 }
+          : { flexGrow: 1, flexBasis: '46%', minHeight: 112, padding: 14, borderRadius: 18, borderWidth: 1, justifyContent: 'space-between', gap: 10 },
+        inverted
+          ? { borderColor: c.white, backgroundColor: c.white }
+          : { borderColor: c.border, backgroundColor: c.elevated },
+        pressed && { opacity: 0.75 },
       ]}
     >
-      <View style={{ width: 34, height: 34, borderRadius: 11, backgroundColor: c.elevated2, borderWidth: 1, borderColor: c.border, alignItems: 'center', justifyContent: 'center' }}>
-        <Icon name={icon} size={16} />
+      <View style={{ width: 34, height: 34, borderRadius: 11, backgroundColor: inverted ? `${c.black}22` : c.elevated2, borderWidth: inverted ? 0 : 1, borderColor: c.border, alignItems: 'center', justifyContent: 'center' }}>
+        <Icon name={icon} size={16} color={fg} />
       </View>
       <View style={{ gap: 2, flex: full ? 1 : undefined }}>
-        <T v="h3">{title}</T>
-        <T v="caption" muted numberOfLines={2}>{sub}</T>
+        <T v="h3" style={{ color: fg }}>{title}</T>
+        <T v="caption" numberOfLines={2} style={inverted ? { color: c.black, opacity: 0.65 } : { color: c.muted }}>{sub}</T>
       </View>
-      {full ? <Icon name="chevron-right" size={16} color={c.muted} /> : null}
+      {full ? <Icon name="chevron-right" size={16} color={inverted ? c.black : c.muted} /> : null}
     </Pressable>
   );
 }
@@ -246,7 +264,7 @@ export default function AssetDetailScreen({ route, navigation }) {
   const sym = route.params?.sym || 'EUR/USD';
   const a = assetBy(sym);
   const { height: winH } = useLayout();
-  const { settings, setSetting, positions } = useStore();
+  const { settings, setSetting, positions, account } = useStore();
   const riskBase = riskBaseOf(settings, account.equity); // risk % is worked out from this fixed amount, not live equity
   const [tf, setTf] = useState('1H');
   useLiveAssets([sym]);                                   // live price + change from the backend
@@ -259,6 +277,7 @@ export default function AssetDetailScreen({ route, navigation }) {
   const [tool, setTool] = useState('cursor');
   const [toolsOpen, setToolsOpen] = useState(false);
   const [full, setFull] = useState(false);
+  const [fsBoxH, setFsBoxH] = useState(0); // measured height of the full screen chart area
   const [section, setSection] = useState('home'); // which view the chart menu modal shows
   const [secOpen, setSecOpen] = useState(false);
   const [cfgOpen, setCfgOpen] = useState(false); // chart settings modal
@@ -306,9 +325,11 @@ export default function AssetDetailScreen({ route, navigation }) {
   const zones = drawings.filter((d) => d.type === 'zone');
   const lines = drawings.filter((d) => d.type === 'line');
 
-  const fsH = Math.max(200, winH - 240);
+  // Full screen: the chart fills exactly the space above the action bar (measured). The chart reserves the same
+  // space under its box for the time labels as in the normal screen, so the bottom looks identical in both.
+  const fsH = fsBoxH || Math.max(200, winH - 240);
 
-  /* ---------- Alert line (bell icon next to the timeframe) ---------- */
+  /* ---------- Alert line (bell icon at the right of the top bar) ---------- */
   // Tap the bell: an alert line appears at the current price. Hold it and drag to the price you want, then create the alert.
   const toggleAlertLine = () => {
     if (alertLine) { setAlertLine(null); return; }
@@ -369,25 +390,21 @@ export default function AssetDetailScreen({ route, navigation }) {
   };
   const menuTitle = section === 'home' ? `${sym} · Menu` : `${sym} · ${(MENU.find((x) => x[0] === section) || [])[1] || ''}`;
 
-  /* ---------- Top bar: chart type (Candles or Line), timeframe and alert ---------- */
-  // Tap one and the bar switches to that picker in the same place. Picking an option brings the buttons back.
+  /* ---------- Top bar: chart type (Candles or Line), timeframe, and the alert bell at the far right ---------- */
+  // Tap type or timeframe and the bar switches to that picker in the same place. The options share the full
+  // width equally, so there is no scrolling and no arrow. Picking an option (even the current one) brings the buttons back.
   const typeInfo = CHART_TYPES.find((t) => t[0] === chartType) || CHART_TYPES[0];
   const toolbarEl = menu ? (
-    <View style={{ flexDirection: 'row', alignItems: 'center', width: '100%', minHeight: 44, gap: 4 }}>
-      <Pressable onPress={() => setMenu(null)} accessibilityRole="button" accessibilityLabel="Close" hitSlop={6}
-        style={({ pressed }) => [{ width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' }, pressed && { opacity: 0.6 }]}>
-        <Icon name="chevron-left" size={20} color={c.text} />
-      </Pressable>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled" style={{ flex: 1 }} contentContainerStyle={{ flexGrow: 1, alignItems: 'center', justifyContent: 'space-around', gap: 4 }}>
-        {menu === 'type'
-          ? CHART_TYPES.map(([id, label, icon]) => <OptBtn key={id} icon={icon} label={label} on={chartType === id} onPress={() => { setChartType(id); setMenu(null); }} />)
-          : TFS.map((t) => <OptBtn key={t} label={t} on={tf === t} onPress={() => { setTf(t); setMenu(null); }} />)}
-      </ScrollView>
+    <View style={{ flexDirection: 'row', alignItems: 'center', width: '100%', minHeight: 44, gap: 2 }}>
+      {menu === 'type'
+        ? CHART_TYPES.map(([id, label, icon]) => <OptBtn key={id} icon={icon} label={label} on={chartType === id} onPress={() => { setChartType(id); setMenu(null); }} />)
+        : TFS.map((t) => <OptBtn key={t} label={t} on={tf === t} onPress={() => { setTf(t); setMenu(null); }} />)}
     </View>
   ) : (
-    <View style={{ flexDirection: 'row', alignItems: 'center', width: '100%', minHeight: 44, gap: 4 }}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', width: '100%', minHeight: 44, gap: 6 }}>
       <TBtn fit icon={typeInfo[2]} label={typeInfo[1]} a11y="Chart type" onPress={() => setMenu('type')} />
       <TBtn fit label={tf} a11y="Timeframe" onPress={() => setMenu('tf')} />
+      <View style={{ flex: 1 }} />
       <TBtn fit icon="bell" a11y={alertLine ? 'Remove alert line' : 'Create alert'} on={!!alertLine} onPress={toggleAlertLine} />
     </View>
   );
@@ -397,7 +414,7 @@ export default function AssetDetailScreen({ route, navigation }) {
   const actionsEl = (inFull) => (
     <View style={{ width: '100%', flexDirection: 'row', alignItems: 'center', borderTopWidth: 1, borderTopColor: c.border, backgroundColor: c.bgAlt }}>
       {!inFull ? <BarBtn icon="maximize" label="Full screen" onPress={() => setFull(true)} /> : null}
-      {!inFull ? <BarBtn icon="grid" label="Open chart menu" onPress={openMenu} /> : null}
+      {!inFull ? <BarBtn icon="layout" label="Open chart menu" onPress={openMenu} /> : null}
       <BarBtn icon="corner-up-left" label="Undo" onPress={undo} disabled={hIdx === 0} />
       <BarBtn icon="corner-up-right" label="Redo" onPress={redo} disabled={hIdx >= history.length - 1} />
       <BarBtn icon="refresh-cw" label="Reset zoom" onPress={resetZoom} />
@@ -638,14 +655,15 @@ export default function AssetDetailScreen({ route, navigation }) {
             </View>
           ) : null}
 
-          {/* Header and top bar: full width, same colour as the chart, so top and chart read as one surface */}
+          {/* Header and top bar: full width, same colour as the chart. Nothing is left under the buttons,
+              so the chart box starts right below them, and the buttons sit right under the session line. */}
           <View pointerEvents="box-none" style={{ position: 'absolute', top: 0, left: 0, right: 0 }}>
             <View
               pointerEvents="box-none"
-              onLayout={(e) => setTopInset(e.nativeEvent.layout.y + e.nativeEvent.layout.height + 10)}
-              style={{ backgroundColor: c.bg, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 6 }}
+              onLayout={(e) => setTopInset(e.nativeEvent.layout.y + e.nativeEvent.layout.height)}
+              style={{ backgroundColor: c.bg, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 0 }}
             >
-              <Row style={{ justifyContent: 'space-between', marginBottom: 10, gap: 12 }}>
+              <Row style={{ justifyContent: 'space-between', marginBottom: 0, gap: 12 }}>
                 <Row gap={12} style={{ flexShrink: 1 }}>
                   <Pressable onPress={() => navigation.goBack()} hitSlop={8} style={{ width: 40, height: 40, marginLeft: -8, alignItems: 'center', justifyContent: 'center' }} accessibilityLabel="Back"><Icon name="chevron-left" size={22} /></Pressable>
                   <View style={{ flexShrink: 1 }}>
@@ -737,9 +755,9 @@ export default function AssetDetailScreen({ route, navigation }) {
         {section === 'home' ? (
           <>
             <Row style={{ flexWrap: 'wrap' }} gap={10}>
-              {MENU.map(([key, title, icon, sub]) => <MenuCard key={key} icon={icon} title={title} sub={sub} onPress={() => pickMenu(key)} />)}
+              {MENU.map(([key, title, icon, sub]) => <MenuCard key={key} icon={icon} title={title} sub={sub} inverted={INVERTED.includes(key)} onPress={() => pickMenu(key)} />)}
             </Row>
-            <MenuCard full icon="trending-up" title="Trade entry" sub="Buy or sell with draggable SL and TP" onPress={() => pickMenu('trade')} />
+            <MenuCard full inverted={INVERTED.includes('trade')} icon="trending-up" title="Trade entry" sub="Buy or sell with draggable SL and TP" onPress={() => pickMenu('trade')} />
           </>
         ) : null}
 
@@ -750,10 +768,12 @@ export default function AssetDetailScreen({ route, navigation }) {
         {section === 'sent' ? <Sentiment /> : null}
       </Sheet>
 
+      {/* Full screen: same layout as the normal screen. No side padding, so the chart and prices reach both walls,
+          and nothing sits between the session line, the buttons and the chart box. */}
       <Modal visible={full} animationType="fade" onRequestClose={() => setFull(false)} supportedOrientations={['portrait', 'landscape']}>
         <SafeAreaView style={{ flex: 1, backgroundColor: c.bg }}>
-          <View style={{ flex: 1, paddingHorizontal: 12, paddingTop: 12, gap: 8, backgroundColor: c.bg }}>
-            <Row style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <View style={{ flex: 1, paddingTop: 12, backgroundColor: c.bg }}>
+            <Row style={{ justifyContent: 'space-between', alignItems: 'flex-start', paddingHorizontal: 12 }}>
               <View>
                 <Row gap={10}>
                   <T v="h2">{sym}</T>
@@ -764,13 +784,14 @@ export default function AssetDetailScreen({ route, navigation }) {
               </View>
               <Pressable onPress={() => setFull(false)} hitSlop={8} style={{ width: 40, height: 40, alignItems: 'center', justifyContent: 'center' }} accessibilityLabel="Exit full screen"><Icon name="minimize" size={20} /></Pressable>
             </Row>
-            {/* Same colour as the chart: no card, so the top bar and chart are one surface */}
-            <View style={{ backgroundColor: c.bg }}>
+            {/* Same colour as the chart: no card, no gap, so the top bar and chart are one surface */}
+            <View style={{ backgroundColor: c.bg, paddingHorizontal: 12 }}>
               {toolbarEl}
-              {hintEl}
             </View>
-            <View style={{ height: fsH }}>
+            {/* The chart takes all the space left above the action bar and goes edge to edge. It keeps the same space under its box for the time labels as the normal screen. */}
+            <View style={{ flex: 1 }} onLayout={(e) => setFsBoxH(Math.round(e.nativeEvent.layout.height))}>
               {chartEl(fsH)}
+              {hintEl ? <View pointerEvents="none" style={{ position: 'absolute', left: 60, right: 12, top: 0 }}>{hintEl}</View> : null}
               {layout === '1' ? <View pointerEvents="box-none" style={{ position: 'absolute', left: 0, top: 0, bottom: 36 }}>{favBarEl(Math.max(80, fsH - 80))}</View> : null}
               {alertPanelEl ? <View pointerEvents="box-none" style={{ position: 'absolute', left: 60, right: 4, bottom: 40 }}>{alertPanelEl}</View> : null}
             </View>
@@ -846,8 +867,10 @@ function AIBrief({ sym, wide }) {
 }
 
 function MyEdge({ sym }) {
-  const [sid, setSid] = useState('lr');
-  const s = strategies.find((x) => x.id === sid);
+  const { strategies } = useStore();
+  const [sid, setSid] = useState((strategies.find((x) => x.markets.includes(sym)) || strategies[0] || {}).id);
+  const s = strategies.find((x) => x.id === sid) || strategies[0];
+  if (!s) return <T v="small" muted>Write a strategy on the Strategy page to check setups against it.</T>;
   const inMarket = s.markets.includes(sym);
   return (
     <View style={{ gap: 12 }}>
@@ -868,11 +891,15 @@ function MyEdge({ sym }) {
 }
 
 function NewsEvents({ sym }) {
+  const { news } = useMarketNews();
+  const { upcoming } = useEconomicCalendar();
   const base = sym.split('/')[0];
-  const items = news.filter((n) => n.tags.some((t) => sym.includes(t) || t === 'USD' || t === base));
+  const quote = sym.split('/')[1] || '';
+  const items = news.filter((n) => (n.tags || []).some((t) => sym.includes(t) || t === 'USD' || t === base)).slice(0, 8);
+  const events = upcoming.filter((e) => !e.ccy || e.ccy === base || e.ccy === quote || (e.affects || []).includes(sym)).slice(0, 3);
   return (
     <View style={{ gap: 8 }}>
-      {upcomingEvents.slice(0, 3).map((e) => (
+      {(events.length ? events : upcoming.slice(0, 3)).map((e) => (
         <Card key={e.id}><Row><Icon name="calendar" size={16} /><T v="h3" style={{ flex: 1 }}>{e.label}</T><T mono>{e.day} {e.time}</T></Row></Card>
       ))}
       {items.map((n) => (

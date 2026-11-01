@@ -3,11 +3,15 @@ import { View, Pressable } from 'react-native';
 import Svg, { Polyline, Polygon, Line, Circle, Defs, LinearGradient, Stop, Text as SvgText } from 'react-native-svg';
 import { colors as c, mono } from '../../../theme/tokens';
 import { Screen, PageTitle, T, Card, Row, Grid, Metric, Segmented, AITag, Button, Stat, Sheet, Chip, Icon, signed, money, useLayout } from '../../../components/ui';
-import { analytics } from '../../../mocks/mock';
+import { analytics as sampleAnalytics } from '../../../mocks/mock';
+import { useStore } from '../../../app/store';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-const PERIODS = { 'Last 7 days': 6, 'Last 14 days': 11, 'Last 30 days': 21 };
-const dateLabel = (offsetFromEnd) => { const d = new Date(2026, 9, 1); d.setDate(d.getDate() - offsetFromEnd); return `${d.getDate()} ${MONTHS[d.getMonth()]}`; };
+// Points per period: the server sends one balance per day; the offline sample has 21 points for 30 days.
+const PERIODS_LIVE = { 'Last 7 days': 7, 'Last 14 days': 14, 'Last 30 days': 30 };
+const PERIODS_SAMPLE = { 'Last 7 days': 6, 'Last 14 days': 11, 'Last 30 days': 21 };
+// The last point of every series is today.
+const dateLabel = (offsetFromEnd) => { const d = new Date(); d.setDate(d.getDate() - offsetFromEnd); return `${d.getDate()} ${MONTHS[d.getMonth()]}`; };
 const k = (v) => `$${(v / 1000).toFixed(1)}k`;
 
 /* ---------------- Equity curve ---------------- */
@@ -148,12 +152,15 @@ export default function AnalyticsScreen({ go }) {
   const [f, setF] = useState({ period: 'Last 30 days', strategy: 'All', edge: 'All trades' });
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [dim, setDim] = useState('Strategy');
+  const { analytics: live } = useStore();
+  const analytics = live || sampleAnalytics;
+  const PERIODS = live ? PERIODS_LIVE : PERIODS_SAMPLE;
   const m = analytics.metrics;
   const set = (key) => (v) => setF((p) => ({ ...p, [key]: v }));
   const activeCount = (f.period !== 'Last 30 days' ? 1 : 0) + (f.strategy !== 'All' ? 1 : 0) + (f.edge !== 'All trades' ? 1 : 0);
   const reset = () => setF({ period: 'Last 30 days', strategy: 'All', edge: 'All trades' });
 
-  const equity = useMemo(() => analytics.equity.slice(-PERIODS[f.period]), [f.period]);
+  const equity = useMemo(() => analytics.equity.slice(-PERIODS[f.period]), [f.period, analytics, PERIODS]);
 
   // A strategy or edge filter narrows the headline numbers to that group.
   const strat = analytics.breakdowns.Strategy.find((s) => s.label === f.strategy);
@@ -163,7 +170,7 @@ export default function AnalyticsScreen({ go }) {
     : f.edge === 'Off edge only' ? { label: 'Off-edge trades', winRate: analytics.offEdge.winRate, avgR: analytics.offEdge.avgR, trades: analytics.offEdge.trades }
     : null;
 
-  const rows = analytics.breakdowns[dim];
+  const rows = analytics.breakdowns[dim].length ? analytics.breakdowns[dim] : [{ label: 'No closed trades yet', trades: 0, winRate: 0, avgR: 0 }];
   const sorted = [...rows].sort((a, b) => b.avgR - a.avgR);
   const maxR = Math.max(...rows.map((r) => Math.abs(r.avgR)), 0.5);
   const totalTrades = rows.reduce((s1, r) => s1 + r.trades, 0) || 1;

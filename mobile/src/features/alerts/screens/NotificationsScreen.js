@@ -68,7 +68,8 @@ function SwipeAway({ children, onDismiss }) {
 
 function Item({ n, onDismiss, onGo }) {
   const [open, setOpen] = useState(false);
-  const meta = META[n.id] || { cat: 'Market', title: n.text, cta: null };
+  // Server notifications carry their own category, title and action; the sample ones use META.
+  const meta = META[n.id] || { cat: CAT[n.cat] ? n.cat : 'Market', title: n.title || n.text, cta: n.cta || null };
   const cat = CAT[meta.cat];
 
   return (

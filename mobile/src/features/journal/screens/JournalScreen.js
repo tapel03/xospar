@@ -11,6 +11,10 @@ import { useStore } from '../../../app/store';
 
 const COLS = [['Date', 112], ['Asset', 88], ['Direction', 92], ['Strategy', 140], ['Entry', 84], ['Exit', 84], ['Risk', 56], ['R', 64], ['P&L', 100], ['Edge', 100], ['AI review', 110]];
 
+// Same corner radius as the cards on the Overview page.
+const R = 14;
+const RAD = { borderRadius: R };
+
 /* ---------------- P&L calendar ---------------- */
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const MON3 = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -196,12 +200,12 @@ function PnLCalendar({ trades, onOpen }) {
   })();
 
   return (
-    <Card style={{ marginBottom: 16, gap: 12 }}>
+    <Card style={[{ marginBottom: 16, gap: 12 }, RAD]}>
       <Row style={{ justifyContent: 'space-between', flexWrap: 'wrap' }}>
         <View style={{ flexShrink: 1 }}>
           <T v="h2">Calendar</T>
         </View>
-        <Segmented options={CAL_PERIODS} value={period} onChange={(p) => { setPeriod(p); setSel(null); }} />
+        <Segmented inverted options={CAL_PERIODS} value={period} onChange={(p) => { setPeriod(p); setSel(null); }} />
       </Row>
 
       <Row style={{ justifyContent: 'space-between' }}>
@@ -339,7 +343,7 @@ function CompareCard({ trades }) {
   const pick = (k) => setSel(k);
 
   return (
-    <Card style={{ marginBottom: 16, gap: 12 }}>
+    <Card style={[{ marginBottom: 16, gap: 12 }, RAD]}>
       <Row style={{ justifyContent: 'space-between', flexWrap: 'wrap' }}>
         <View style={{ flexShrink: 1 }}>
           <T v="h2">Compare</T>
@@ -348,9 +352,9 @@ function CompareCard({ trades }) {
       </Row>
       <View style={{ gap: 8 }}>
         <T v="label" muted>Compare by</T>
-        <Segmented scroll options={GROUPS} value={by} onChange={(v) => { setBy(v); setSel(null); }} />
+        <Segmented inverted scroll options={GROUPS} value={by} onChange={(v) => { setBy(v); setSel(null); }} />
         <T v="label" muted>Measure</T>
-        <Segmented scroll options={metrics} value={m} onChange={(v) => { setMetric(v); setSel(null); }} />
+        <Segmented inverted scroll options={metrics} value={m} onChange={(v) => { setMetric(v); setSel(null); }} />
       </View>
       {items.length === 0 ? (
         <T v="small" muted>No closed trades to compare yet.</T>
@@ -429,15 +433,16 @@ export default function JournalScreen() {
         </Row>
       ) : null}
 
+      {/* Metric tiles alternate between inverted (white in dark mode, black in light mode) and normal, like the Overview page. */}
       <Grid style={{ marginBottom: 16 }}>
-        <Metric label="Total trades" value={String(n)} sub="This month" />
-        <Metric label="Win rate" value={`${Math.round((wins.length / n) * 100)}%`} sub={`${wins.length} wins, ${losses.length} losses`} />
-        <Metric label="Average R" value={signed(avgR, 2, 'R')} />
-        <Metric label="Average win" value={money(wins.reduce((a, t) => a + t.pnl, 0) / wins.length)} />
-        <Metric label="Average loss" value={money(losses.reduce((a, t) => a + t.pnl, 0) / losses.length)} />
-        <Metric label="Expectancy" value={signed(avgR, 2, 'R')} sub="per trade" />
-        <Metric label="Drawdown" value="−3.2%" sub="from equity peak" />
-        <Metric label="Strategy adherence" value={`${adherence}%`} sub="trades fully on edge" />
+        <Metric inverted style={RAD} label="Total trades" value={String(n)} sub="This month" />
+        <Metric style={RAD} label="Win rate" value={`${Math.round((wins.length / n) * 100)}%`} sub={`${wins.length} wins, ${losses.length} losses`} />
+        <Metric style={RAD} label="Average R" value={signed(avgR, 2, 'R')} />
+        <Metric style={RAD} label="Average win" value={money(wins.reduce((a, t) => a + t.pnl, 0) / wins.length)} />
+        <Metric style={RAD} label="Average loss" value={money(losses.reduce((a, t) => a + t.pnl, 0) / losses.length)} />
+        <Metric inverted style={RAD} label="Expectancy" value={signed(avgR, 2, 'R')} sub="per trade" />
+        <Metric style={RAD} label="Drawdown" value="−3.2%" sub="from equity peak" />
+        <Metric inverted style={RAD} label="Strategy adherence" value={`${adherence}%`} sub="trades fully on edge" />
       </Grid>
 
       <PnLCalendar trades={trades} onOpen={(id) => nav.navigate('TradeDetail', { id })} />
@@ -458,7 +463,7 @@ export default function JournalScreen() {
           ? <Empty icon="book-open" title="No trades match this filter" body="Try including more results, edge types or review states." action="Reset filter" onAction={() => setFilter(DEFAULT_JOURNAL_FILTER)} />
           : <Empty icon="book-open" title="No trades yet" body="Log a trade to start building your record." action="Add trade" onAction={() => nav.navigate('AddTrade')} />
       ) : wide ? (
-        <Card pad={0}>
+        <Card pad={0} style={RAD}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             <View style={{ minWidth: '100%' }}>
               <Row style={{ paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: c.border }} gap={0}>
@@ -483,7 +488,7 @@ export default function JournalScreen() {
           </ScrollView>
         </Card>
       ) : (
-        <Card pad={0}>{rows.map((t, i) => <TradeRow key={t.id} t={t} first={i === 0} onPress={() => nav.navigate('TradeDetail', { id: t.id })} />)}</Card>
+        <Card pad={0} style={RAD}>{rows.map((t, i) => <TradeRow key={t.id} t={t} first={i === 0} onPress={() => nav.navigate('TradeDetail', { id: t.id })} />)}</Card>
       )}
 
       <JournalFilterSheet visible={filterOpen} onClose={() => setFilterOpen(false)} value={filter} onApply={setFilter} />

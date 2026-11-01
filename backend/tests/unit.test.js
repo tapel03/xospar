@@ -82,8 +82,8 @@ test('provider symbols map back to app symbols', () => {
 });
 
 test('catalogue has the old Savanai lists and the Edgeline app symbols', () => {
-  assert.equal(ASSETS.filter((a) => a.cat === 'Forex').length, 29);           // 28 pairs + DXY
-  assert.equal(ASSETS.filter((a) => a.cat === 'Crypto').length, 5);
+  assert.equal(ASSETS.filter((a) => a.cat === 'Forex').length, 57);           // 28 majors + 16 exotics + 12 crosses + DXY
+  assert.equal(ASSETS.filter((a) => a.cat === 'Crypto').length, 20);
   assert.equal(ASSETS.filter((a) => a.cat === 'Stocks').length, 5);
   for (const s of ['EUR/USD', 'XAU/USD', 'WTI', 'US500', 'NAS100', 'GER40', 'AAPL', 'NVDA', 'BTC/USD', 'ETH/USD', 'GBP/USD', 'USD/JPY', 'USD/CAD']) assert.ok(getAsset(s), s);
   assert.equal(new Set(ASSETS.map((a) => a.sym)).size, ASSETS.length);

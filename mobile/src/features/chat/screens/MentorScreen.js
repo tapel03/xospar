@@ -12,11 +12,12 @@ import { aiApi } from '../aiApi';
 import { featureFlags } from '../../../app/config';
 
 const NAME = 'Mpho'; // shown in the greeting; matches the name in Settings
+// [icon, label, prompt, inverted]. Inverted cards are white in dark mode and black in light mode, like the Overview page.
 const ACTIONS = [
-  ['book-open', 'Review trades', 'Review my last 10 EUR/USD trades.'],
-  ['layers', 'Check my edge', 'Am I following my strategy?'],
-  ['activity', 'Market today', 'Explain today\'s market movement.'],
-  ['calendar', 'Upcoming events', 'Which events could affect my watchlist?'],
+  ['book-open', 'Review trades', 'Review my last 10 EUR/USD trades.', true],
+  ['layers', 'Check my edge', 'Am I following my strategy?', false],
+  ['activity', 'Market today', 'Explain today\'s market movement.', false],
+  ['calendar', 'Upcoming events', 'Which events could affect my watchlist?', true],
 ];
 const MAX_FILES = 5;
 const DOC_TYPES = ['application/pdf', 'image/*', 'text/plain', 'text/csv', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
@@ -358,15 +359,22 @@ export default function MentorScreen({ params }) {
           <T v="display" style={{ fontSize: 38, lineHeight: 44, letterSpacing: -1 }}>Hello {NAME}{'\n'}How can I help you today?</T>
         </View>
         <Row style={{ flexWrap: 'wrap' }} gap={10}>
-          {ACTIONS.map(([icon, label, prompt]) => (
-            <Pressable key={label} onPress={() => send(prompt)} accessibilityRole="button" accessibilityLabel={label}
-              style={({ pressed }) => [{ flexGrow: 1, flexBasis: '46%', minHeight: 112, padding: 14, borderRadius: 18, borderWidth: 1, borderColor: c.border, backgroundColor: c.elevated, justifyContent: 'space-between' }, pressed && { opacity: 0.75, backgroundColor: c.elevated2 }]}>
-              <View style={{ width: 34, height: 34, borderRadius: 11, backgroundColor: c.elevated2, borderWidth: 1, borderColor: c.border, alignItems: 'center', justifyContent: 'center' }}>
-                <Icon name={icon} size={16} />
-              </View>
-              <T v="h3">{label}</T>
-            </Pressable>
-          ))}
+          {ACTIONS.map(([icon, label, prompt, inverted]) => {
+            const fg = inverted ? c.black : c.text;
+            return (
+              <Pressable key={label} onPress={() => send(prompt)} accessibilityRole="button" accessibilityLabel={label}
+                style={({ pressed }) => [
+                  { flexGrow: 1, flexBasis: '46%', minHeight: 112, padding: 14, borderRadius: 14, borderWidth: 1, justifyContent: 'space-between' },
+                  inverted ? { backgroundColor: c.white, borderColor: c.white } : { backgroundColor: c.surface, borderColor: c.border },
+                  pressed && { opacity: 0.75 },
+                ]}>
+                <View style={{ width: 34, height: 34, borderRadius: 11, backgroundColor: inverted ? `${c.black}22` : c.elevated2, borderWidth: inverted ? 0 : 1, borderColor: c.border, alignItems: 'center', justifyContent: 'center' }}>
+                  <Icon name={icon} size={16} color={fg} />
+                </View>
+                <T v="h3" style={{ color: fg }}>{label}</T>
+              </Pressable>
+            );
+          })}
         </Row>
       </ScrollView>
       {composer}

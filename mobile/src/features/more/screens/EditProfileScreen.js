@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
-import { View } from 'react-native';
-import { colors as c, themed } from '../../../theme/tokens';
+import { View, Platform, Pressable } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
+import { File, Paths } from 'expo-file-system';
+import { colors as c } from '../../../theme/tokens';
 import { Frame } from '../../../navigation/Frame';
 import { Screen, PageTitle, T, Card, Row, Chip, Field, Button } from '../../../components/ui';
 import Dropdown from '../../../components/ui/Dropdown';
+import Avatar from '../../../components/ui/Avatar';
 import { useStore } from '../../../app/store';
 import { TIME_ZONES } from '../../../app/appInfo';
 
@@ -13,13 +16,27 @@ const MARKETS = ['Forex', 'Stocks', 'Indices', 'Commodities', 'Crypto'];
 const STYLES = ['Day trading', 'Swing trading', 'Scalping', 'Position trading'];
 const FS = { flexBasis: 'auto', flexGrow: 0 }; // full-width field inside a column
 
+/** The picker gives a temporary file. Copy it into the app's documents folder so it is still there next time. */
+function keepPhoto(uri) {
+  if (Platform.OS === 'web') return uri;
+  try {
+    const dest = new File(Paths.document, `profile-${Date.now()}.jpg`);
+    new File(uri).copy(dest);
+    return dest.uri;
+  } catch (e) {
+    return uri;
+  }
+}
+
 export default function EditProfileScreen({ navigation }) {
   const { profile, setProfile } = useStore();
   const [f, setF] = useState({
     name: profile.name || '', displayName: profile.displayName || '', email: profile.email || '', phone: profile.phone || '',
     country: profile.country || '', timezone: profile.timezone || TIME_ZONES[0], status: profile.status || STATUSES[0],
     experience: profile.experience || EXPERIENCE[1], style: profile.style || STYLES[0], markets: profile.markets || [],
+    photo: profile.photo || '',
   });
+  const [photoMsg, setPhotoMsg] = useState('');
   const set = (k) => (v) => setF((p) => ({ ...p, [k]: v }));
   const toggleMarket = (m) => setF((p) => ({ ...p, markets: p.markets.includes(m) ? p.markets.filter((x) => x !== m) : [...p.markets, m] }));
 
@@ -29,12 +46,25 @@ export default function EditProfileScreen({ navigation }) {
 
   const initial = ((f.displayName || f.name || '?').trim()[0] || '?').toUpperCase();
 
+  const pickPhoto = async () => {
+    setPhotoMsg('');
+    try {
+      const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 0.7 });
+      if (!res.canceled && res.assets && res.assets.length) {
+        setF((p) => ({ ...p, photo: keepPhoto(res.assets[0].uri) }));
+      }
+    } catch (e) {
+      setPhotoMsg('Could not open your photos. Check that Edgeline is allowed to access them.');
+    }
+  };
+
   const save = () => {
     if (errors.length) return;
     setProfile({
       ...profile,
       name: f.name.trim(), displayName: f.displayName.trim() || f.name.trim(), email: f.email.trim(), phone: f.phone.trim(),
       country: f.country.trim(), timezone: f.timezone, status: f.status, experience: f.experience, style: f.style, markets: f.markets,
+      photo: f.photo,
     });
     navigation.goBack();
   };
@@ -52,13 +82,25 @@ export default function EditProfileScreen({ navigation }) {
         <PageTitle onBack={() => navigation.goBack()} kicker="Settings" title="Edit profile" />
         <View style={{ width: '100%', maxWidth: 640, alignSelf: 'center', gap: 16 }}>
           <Card style={{ gap: 16 }}>
-            <Row gap={14}>
-              <View style={st.avatar}><T v="h1">{initial}</T></View>
-              <View style={{ flex: 1 }}>
-                <T v="h3" numberOfLines={1}>{f.displayName || f.name || 'Your name'}</T>
-                <T v="small" muted>{f.status}</T>
+            <Row gap={16}>
+              <Pressable onPress={pickPhoto} accessibilityRole="button" accessibilityLabel="Change profile picture">
+                <Avatar photo={f.photo} initial={initial} size={84} />
+                <View style={{ position: 'absolute', right: -2, bottom: -2, width: 30, height: 30, borderRadius: 15, backgroundColor: c.btn, borderWidth: 2, borderColor: c.surface, alignItems: 'center', justifyContent: 'center' }}>
+                  <T style={{ color: c.btnText, fontSize: 14, fontWeight: '800' }}>+</T>
+                </View>
+              </Pressable>
+              <View style={{ flex: 1, gap: 8 }}>
+                <View>
+                  <T v="h3" numberOfLines={1}>{f.displayName || f.name || 'Your name'}</T>
+                  <T v="small" muted>{f.status}</T>
+                </View>
+                <Row style={{ flexWrap: 'wrap' }} gap={8}>
+                  <Button small variant="secondary" icon="image" label={f.photo ? 'Change photo' : 'Add photo'} onPress={pickPhoto} />
+                  {f.photo ? <Button small variant="ghost" icon="trash-2" label="Remove" onPress={() => set('photo')('')} /> : null}
+                </Row>
               </View>
             </Row>
+            {photoMsg ? <T v="caption" bold>⚠  {photoMsg}</T> : null}
 
             <Field label="Full name" value={f.name} onChangeText={set('name')} placeholder="Your full name" autoCapitalize="words" style={FS} />
             <Field label="Display name" value={f.displayName} onChangeText={set('displayName')} placeholder="What the app calls you" autoCapitalize="words" hint="Shown in greetings and on your profile." style={FS} />
@@ -96,7 +138,3 @@ export default function EditProfileScreen({ navigation }) {
     </Frame>
   );
 }
-
-const st = themed(() => ({
-  avatar: { width: 60, height: 60, borderRadius: 30, borderWidth: 1, borderColor: c.borderStrong, alignItems: 'center', justifyContent: 'center' },
-}));

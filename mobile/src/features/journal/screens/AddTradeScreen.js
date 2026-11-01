@@ -5,14 +5,14 @@ import { colors as c } from '../../../theme/tokens';
 import { Frame } from '../../../navigation/Frame';
 import { Screen, PageTitle, T, Card, Row, Chip, Segmented, Field, Button, Icon, Sheet, Disclaimer, Stat } from '../../../components/ui';
 import { KV } from '../../../components/domain';
-import { assets, allSetups, assetBy, fmtPrice, account } from '../../../mocks/mock';
+import { assets, allSetups, assetBy, fmtPrice, account as sampleAccount } from '../../../mocks/mock';
 import { riskBaseOf } from '../../trading/risk';
 import { useStore } from '../../../app/store';
 
 const EMOTIONS = ['Calm', 'Confident', 'Anxious', 'Frustrated', 'FOMO', 'Bored', 'Tired'];
 const CONDITIONS = ['Trending', 'Ranging', 'Volatile', 'News-driven', 'Quiet'];
 const COOLDOWN = 10;
-const EQUITY = account.equity; // fallback only: the risk base from Settings is used when it has been set
+const EQUITY = sampleAccount.equity; // default argument only; the screen passes the user's own base: the risk base from Settings is used when it has been set
 
 /* ---------- helpers ---------- */
 const num = (s) => parseFloat(String(s).replace(',', '.'));
@@ -68,8 +68,8 @@ function ticketErrors(f) {
 }
 
 export default function AddTradeScreen({ route, navigation }) {
-  const { settings, addTrade, strategies, trades } = useStore();
-  const base = riskBaseOf(settings, EQUITY); // risk % is worked out from this fixed amount, not live equity
+  const { settings, addTrade, strategies, trades, account } = useStore();
+  const base = riskBaseOf(settings, account.equity || EQUITY); // risk % is worked out from this fixed amount, not live equity
   const init = route.params?.draft || {};
   const [lockedAsset] = useState(!!init.asset); // opened from a chart: the market is fixed
 

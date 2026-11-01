@@ -2,10 +2,12 @@ import React from 'react';
 import { View } from 'react-native';
 import { Frame } from '../../../navigation/Frame';
 import { Screen, PageTitle, T, Card, Row, CheckRow, AITag, Button, Disclaimer, useLayout } from '../../../components/ui';
-import { allSetups, strategies } from '../../../mocks/mock';
+import { strategies as sampleStrategies } from '../../../mocks/mock';
+import { useStore } from '../../../app/store';
 
-export function evaluateTrade(d = {}) {
-  const s = strategies.find((x) => x.name === d.strategy) || strategies[1];
+export function evaluateTrade(d = {}, strategies = sampleStrategies, settings = { maxRisk: 1 }) {
+  const maxRisk = Number(settings.maxRisk) || 1;
+  const s = strategies.find((x) => x.name === d.strategy) || strategies[1] || strategies[0] || sampleStrategies[1];
   const asset = d.asset || 'EUR/USD';
   const setup = d.setup || s.setups[0];
   const risk = parseFloat(d.risk || '1');
@@ -13,7 +15,7 @@ export function evaluateTrade(d = {}) {
     { key: 'Strategy', q: 'Does this setup match my strategy?', status: s.setups.includes(setup) && s.markets.includes(asset) ? 'pass' : 'fail',
       detail: s.setups.includes(setup) ? `${setup} is part of ${s.name}.` : `${setup} is not in ${s.name} (allowed: ${s.setups.join(', ')}).` },
     { key: 'Market conditions', q: 'Does the market condition match my edge?', status: 'warn', detail: 'Range day so far, ATR 18% below average. Your best results come on expansion days.' },
-    { key: 'Risk', q: 'Is risk within my rules?', status: risk <= 1 ? 'pass' : 'fail', detail: `${risk}% planned vs your 1% maximum.` },
+    { key: 'Risk', q: 'Is risk within my rules?', status: risk <= maxRisk ? 'pass' : 'fail', detail: `${risk}% planned vs your ${maxRisk}% maximum.` },
     { key: 'Upcoming event', q: 'Are there major upcoming events?', status: 'warn', detail: 'US CPI at 14:30, inside your 60-minute no-trade window for USD pairs.' },
     { key: 'Correlation', q: 'Is it correlated with an open position?', status: 'pass', detail: 'No open positions. GBP/USD alert pending (0.81 correlated).' },
     { key: 'Exposure', q: 'Am I overexposed?', status: 'pass', detail: 'USD exposure would be 1 position, 1% at risk. Limit is 2.' },
@@ -25,7 +27,8 @@ export function evaluateTrade(d = {}) {
 
 export default function TradeCheckScreen({ route, navigation }) {
   const d = route.params?.draft || { asset: route.params?.asset || 'EUR/USD', strategy: 'London Reversal', setup: 'Liquidity reclaim', risk: '1' };
-  const { checks, s, asset } = evaluateTrade(d);
+  const { strategies, settings } = useStore();
+  const { checks, s, asset } = evaluateTrade(d, strategies, settings);
   const { wide } = useLayout();
   const fails = checks.filter((x) => x.status === 'fail').length;
   const warns = checks.filter((x) => x.status === 'warn').length;

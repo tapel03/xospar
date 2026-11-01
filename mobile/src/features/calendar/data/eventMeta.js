@@ -3,7 +3,7 @@
 
 export const IMPACTS = ['High', 'Medium', 'Low'];
 export const EVENT_TYPES = ['Growth', 'Inflation', 'Employment', 'Central Bank', 'Bonds', 'Housing', 'Consumer Surveys', 'Business Surveys', 'Speeches', 'Misc'];
-export const CURRENCIES = ['AUD', 'CAD', 'CHF', 'CNY', 'EUR', 'GBP', 'JPY', 'NZD', 'USD'];
+export const CURRENCIES = ['AUD', 'CAD', 'CHF', 'CNY', 'EUR', 'GBP', 'JPY', 'NZD', 'USD', 'ZAR'];
 export const VIEWS = ['Today', 'Tomorrow', 'Today+Tomorrow', 'Yesterday', 'This Week'];
 
 export const DEFAULT_FILTER = { impacts: [...IMPACTS], types: [...EVENT_TYPES], ccys: [...CURRENCIES], view: 'This Week' };
@@ -24,17 +24,20 @@ export const EXTRA_EVENTS = [
   { id: 'e0', time: '14:30', day: 'Yesterday', label: 'US Retail Sales (Sep)', impact: 'High', tag: 'USD', note: '+0.6% vs +0.3%' },
 ];
 
-export const metaOf = (e) => EVENT_META[e.id] || { type: 'Misc', ccy: CURRENCIES.includes(e.tag) ? e.tag : 'USD', offset: 0 };
+// Live events (from the backend) carry their own type, currency and day offset.
+export const metaOf = (e) => (e.offset !== undefined && e.type
+  ? { type: EVENT_TYPES.includes(e.type) ? e.type : 'Misc', ccy: e.ccy || e.tag, offset: e.offset }
+  : EVENT_META[e.id] || { type: 'Misc', ccy: CURRENCIES.includes(e.tag) ? e.tag : 'USD', offset: 0 });
 
 const inView = (offset, view) => {
   if (view === 'Today') return offset === 0;
   if (view === 'Tomorrow') return offset === 1;
   if (view === 'Today+Tomorrow') return offset === 0 || offset === 1;
   if (view === 'Yesterday') return offset === -1;
-  return true; // This Week
+  return offset >= -6 && offset <= 7; // This Week
 };
 
-const minutes = (t) => { const m = /^(\d{1,2}):(\d{2})$/.exec(t); return m ? Number(m[1]) * 60 + Number(m[2]) : -1; };
+const minutes = (e) => { if (e.ts) return e.ts; const m = /^(\d{1,2}):(\d{2})$/.exec(e.time); return m ? Number(m[1]) * 60 + Number(m[2]) : -1; };
 
 /** Filters the events and puts them in order: today first, then the days ahead, then yesterday. */
 export function applyFilter(events, f) {
@@ -44,7 +47,7 @@ export function applyFilter(events, f) {
       const m = metaOf(e);
       return f.impacts.includes(e.impact) && f.types.includes(m.type) && f.ccys.includes(m.ccy) && inView(m.offset, f.view);
     })
-    .sort((a, b) => rank(metaOf(a).offset) - rank(metaOf(b).offset) || minutes(a.time) - minutes(b.time));
+    .sort((a, b) => rank(metaOf(a).offset) - rank(metaOf(b).offset) || minutes(a) - minutes(b));
 }
 
 /** How many filter groups differ from the defaults. */

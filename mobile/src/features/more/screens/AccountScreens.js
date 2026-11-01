@@ -3,7 +3,6 @@ import { View } from 'react-native';
 import { colors as c, themed } from '../../../theme/tokens';
 import { Screen, PageTitle, T, Card, Row, Grid, Segmented, Toggle, Badge, Bar, Divider, AITag, CheckRow, Metric, Disclaimer, useLayout } from '../../../components/ui';
 import { Frame } from '../../../navigation/Frame';
-import { account } from '../../../mocks/mock';
 import { useStore } from '../../../app/store';
 
 /* ---------------- Performance review ---------------- */
@@ -28,7 +27,7 @@ const PROGRESS = [{ w: 'W36', a: 58 }, { w: 'W37', a: 64 }, { w: 'W38', a: 71 },
 export function ReviewScreen({ navigation, route }) {
   const [period, setPeriod] = useState(route.params?.period || 'Week');
   const [cooling, setCooling] = useState(false);
-  const { settings } = useStore();
+  const { settings, account } = useStore();
   const { wide } = useLayout();
   const r = REVIEW[period];
   const ddLimit = 10; const dd = Math.abs(account.drawdown);

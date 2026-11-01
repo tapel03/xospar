@@ -6,7 +6,6 @@ import { Screen, PageTitle, T, Card, Row, Button, Empty, AITag, useLayout } from
 import FilterSheet, { FilterButton } from '../../../components/sheet/FilterSheet';
 import AlertItem from '../components/AlertItem';
 import CreateAlertSheet from '../components/CreateAlertSheet';
-import { alertHistory } from '../../../mocks/mock';
 import { useStore } from '../../../app/store';
 
 const TABS = ['Active', 'Triggered', 'Paused', 'Expired'];
@@ -15,7 +14,7 @@ const WHO = ['All', 'My alerts', 'AI alerts'];
 export default function AlertsScreen() {
   const nav = useNavigation();
   const { wide } = useLayout();
-  const { alerts, updateAlert, removeAlert } = useStore();
+  const { alerts, alertHistory, updateAlert, removeAlert } = useStore();
   const [tab, setTab] = useState('Active');
   const [who, setWho] = useState('All');
   const [creating, setCreating] = useState(false);
