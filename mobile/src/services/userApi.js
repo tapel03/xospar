@@ -8,6 +8,9 @@ export const userApi = {
   register: (email, password) => http.post('/v1/auth/register', { email, password }),
   login: (email, password) => http.post('/v1/auth/login', { email, password }, { auth: false }),
   logout: () => http.post('/v1/auth/logout'),
+  forgotPassword: (email) => http.post('/v1/auth/forgot', { email }, { auth: false }),
+  verifyResetCode: (email, code) => http.post('/v1/auth/verify-code', { email, code }, { auth: false }),
+  resetPassword: (resetToken, password) => http.post('/v1/auth/reset', { resetToken, password }, { auth: false }),
 
   me: () => http.get('/v1/me'),
   patchProfile: (patch) => http.patch('/v1/me/profile', patch),

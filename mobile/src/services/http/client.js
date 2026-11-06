@@ -1,6 +1,7 @@
 import { API_BASE_URL } from '../../app/config';
 import { currentToken } from '../session';
 import { ApiError } from './errors';
+import { ERRORS } from '../../utils/errorMessages';
 
 let onUnauthorized = null;
 /** The store registers this to start a fresh session when the server forgets ours. */
@@ -29,11 +30,23 @@ async function request(path, { method = 'GET', query, body, timeoutMs = 12000, s
       clearTimeout(timer);
       if (await onUnauthorized()) return request(path, { method, query, body, timeoutMs, signal, auth, retried: true });
     }
-    if (!res.ok) throw new ApiError(data?.message || `Request failed (${res.status})`, { status: res.status, code: data?.error || 'http_error', body: data });
+    if (!res.ok) {
+      // Plain message for the user. The technical detail stays in body.detail for debugging.
+      const message = res.status >= 500 ? ERRORS.server : res.status === 429 ? ERRORS.tooMany : data?.message || ERRORS.generic;
+      throw new ApiError(message, {
+        status: res.status,
+        code: data?.error || 'http_error',
+        body: { ...(data || {}), detail: `HTTP ${res.status} at ${path}` },
+      });
+    }
     return data;
   } catch (err) {
     if (err instanceof ApiError) throw err;
-    throw new ApiError(err.name === 'AbortError' ? 'Request timed out' : err.message, { code: err.name === 'AbortError' ? 'timeout' : 'network_error' });
+    const timedOut = err.name === 'AbortError';
+    throw new ApiError(
+      timedOut ? ERRORS.timeout : ERRORS.network,
+      { code: timedOut ? 'timeout' : 'network_error', body: { detail: `${API_BASE_URL}: ${err.message}` } },
+    );
   } finally {
     clearTimeout(timer);
   }

@@ -8,6 +8,7 @@ import Avatar from '../../../components/ui/Avatar';
 import { useStore } from '../../../app/store';
 import { featureFlags } from '../../../app/config';
 import { priceSocket } from '../../../services/socket/PriceSocket';
+import { endSession, forgetSignIn } from '../../../services/authState';
 import { APP_NAME, APP_VERSION, APP_BUILD, CONTACT, STORE_URL, SUBSCRIPTIONS_URL, SHARE_MESSAGE, REQUIREMENTS, LANGUAGES, PLANS } from '../../../app/appInfo';
 
 /* ---------------- small building blocks ---------------- */
@@ -194,8 +195,13 @@ export default function SettingsScreen() {
     ]);
   };
 
-  // Clears the navigation history and returns to the start of the app, so Back cannot return to a signed-in screen.
-  const doLogOut = () => nav.reset({ index: 0, routes: [{ name: 'Onboarding' }] });
+  // Ends the session on the server and on this device, loads a fresh anonymous session,
+  // then clears the navigation history so Back cannot return to a signed-in screen.
+  const doLogOut = async () => {
+    await endSession();
+    reload();
+    nav.reset({ index: 0, routes: [{ name: 'Login' }] });
+  };
   const logOut = () => {
     if (Platform.OS === 'web') { doLogOut(); return; }
     Alert.alert('Log out?', 'You will need to sign in again to see your journal and alerts.', [
@@ -205,12 +211,13 @@ export default function SettingsScreen() {
   };
 
   const canDelete = delText.trim().toUpperCase() === 'DELETE';
-  const doDelete = () => {
+  const doDelete = async () => {
     if (!canDelete) return;
-    deleteAccount();
     setDelOpen(false);
     setDelText('');
-    nav.reset({ index: 0, routes: [{ name: 'Onboarding' }] });
+    await deleteAccount();
+    await forgetSignIn();
+    nav.reset({ index: 0, routes: [{ name: 'Login' }] });
   };
   const askDelete = () => { setDelText(''); setDelOpen(true); };
 
@@ -452,7 +459,7 @@ export default function SettingsScreen() {
     'Privacy & security': (
       <View>
         <Sub first title="Security">
-          <Toggle label="Two-factor authentication" value={val('twoFactor', true)} onChange={(v) => setSetting('twoFactor', v)} />
+          <Toggle label="Two-factor authentication" detail="Ask for an emailed code every time you sign in" value={val('twoFactor', true)} onChange={(v) => setSetting('twoFactor', v)} />
           <Toggle label="Biometric unlock" value={val('biometric', false)} onChange={(v) => setSetting('biometric', v)} />
           <Toggle label="Biometrics before live orders" detail="Ask for Face ID or fingerprint before an order is sent to a live account" value={val('biometricOrders', true)} onChange={(v) => setSetting('biometricOrders', v)} />
         </Sub>

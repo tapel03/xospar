@@ -4,6 +4,8 @@ import { File, Paths } from 'expo-file-system';
 // Keeps the backend session token on the device. Web: localStorage. Native: a file in the app's
 // private documents folder (no extra native module needed). Every read and write is guarded, so a
 // blocked store just means a new device session next launch.
+// saveToken(token, persist): with persist = false the token only lives in memory for this run
+// (used when the user signs in without "Remember me").
 const KEY = 'edgeline.session';
 let cached;
 
@@ -18,15 +20,15 @@ export async function loadToken() {
   return cached;
 }
 
-export async function saveToken(token) {
+export async function saveToken(token, persist = true) {
   cached = token || null;
   try {
     if (Platform.OS === 'web') {
-      if (token) globalThis.localStorage?.setItem(KEY, token); else globalThis.localStorage?.removeItem(KEY);
+      if (token && persist) globalThis.localStorage?.setItem(KEY, token); else globalThis.localStorage?.removeItem(KEY);
       return;
     }
     const f = file();
-    if (!token) { if (f.exists) f.delete(); return; }
+    if (!token || !persist) { if (f.exists) f.delete(); return; }
     f.create({ overwrite: true });
     f.write(JSON.stringify({ token }));
   } catch { /* stays in memory for this run */ }

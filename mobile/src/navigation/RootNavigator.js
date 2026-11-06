@@ -20,6 +20,14 @@ import NotificationsScreen from '../features/alerts/screens/NotificationsScreen'
 import EditProfileScreen from '../features/more/screens/EditProfileScreen';
 import ManageAccountsScreen from '../features/more/screens/ManageAccountsScreen';
 import LegalScreen from '../features/more/screens/LegalScreen';
+import AuthGate from '../features/auth/AuthGate';
+import WelcomeScreen from '../features/auth/screens/WelcomeScreen';
+import LoginScreen from '../features/auth/screens/LoginScreen';
+import SignUpScreen from '../features/auth/screens/SignUpScreen';
+import ForgotPasswordScreen from '../features/auth/screens/ForgotPasswordScreen';
+import OtpScreen from '../features/auth/screens/OtpScreen';
+import SetPasswordScreen from '../features/auth/screens/SetPasswordScreen';
+import AuthLegalScreen from '../features/auth/screens/AuthLegalScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -40,6 +48,12 @@ const gatedScreen = (Comp, active, skeleton, ms = 350) => function GatedScreen(p
   return open ? <Comp {...props} /> : <Frame active={active}>{skeleton}</Frame>;
 };
 
+/** The main app only opens for a signed-in user. Everyone else is sent to the welcome screen. */
+function ShellGated(props) {
+  useMode();
+  return <AuthGate navigation={props.navigation}><Shell {...props} /></AuthGate>;
+}
+
 /** Asset detail also waits for the chart's candles, so the chart and price appear together. */
 function AssetDetailT(props) {
   useMode();
@@ -51,7 +65,6 @@ function AssetDetailT(props) {
 
 const SplashT = themedScreen(SplashScreen);
 const OnboardingT = themedScreen(OnboardingScreen);
-const ShellT = themedScreen(Shell);
 const TradeDetailT = gatedScreen(TradeDetailScreen, 'journal', <DetailSkeleton chart />);
 const AddTradeT = themedScreen(AddTradeScreen);
 const TradeCheckT = gatedScreen(TradeCheckScreen, 'journal', <DetailSkeleton />);
@@ -61,6 +74,13 @@ const ReviewT = gatedScreen(ReviewScreen, 'analytics', <DetailSkeleton />);
 const EditProfileT = gatedScreen(EditProfileScreen, 'settings', <DetailSkeleton />);
 const ManageAccountsT = gatedScreen(ManageAccountsScreen, 'settings', <DetailSkeleton />);
 const LegalT = themedScreen(LegalScreen);
+const WelcomeT = themedScreen(WelcomeScreen);
+const LoginT = themedScreen(LoginScreen);
+const SignUpT = themedScreen(SignUpScreen);
+const ForgotPasswordT = themedScreen(ForgotPasswordScreen);
+const OtpT = themedScreen(OtpScreen);
+const SetPasswordT = themedScreen(SetPasswordScreen);
+const AuthLegalT = themedScreen(AuthLegalScreen);
 
 export default function RootNavigator() {
   const mode = useMode();
@@ -70,8 +90,15 @@ export default function RootNavigator() {
       <StatusBar style={mode === 'dark' ? 'light' : 'dark'} />
       <Stack.Navigator initialRouteName="Splash" screenOptions={{ headerShown: false, animation: 'fade', contentStyle: { backgroundColor: c.bg } }}>
         <Stack.Screen name="Splash" component={SplashT} />
+        <Stack.Screen name="Welcome" component={WelcomeT} />
+        <Stack.Screen name="Login" component={LoginT} />
+        <Stack.Screen name="SignUp" component={SignUpT} />
+        <Stack.Screen name="ForgotPassword" component={ForgotPasswordT} />
+        <Stack.Screen name="OTP" component={OtpT} />
+        <Stack.Screen name="SetPassword" component={SetPasswordT} />
+        <Stack.Screen name="AuthLegal" component={AuthLegalT} />
         <Stack.Screen name="Onboarding" component={OnboardingT} />
-        <Stack.Screen name="Main" component={ShellT} />
+        <Stack.Screen name="Main" component={ShellGated} />
         <Stack.Screen name="AssetDetail" component={AssetDetailT} />
         <Stack.Screen name="TradeDetail" component={TradeDetailT} />
         <Stack.Screen name="AddTrade" component={AddTradeT} />

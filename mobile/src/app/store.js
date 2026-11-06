@@ -7,6 +7,7 @@ import { loadToken, saveToken } from '../services/session';
 import { cache } from '../services/cache';
 import { setUnauthorizedHandler } from '../services/http/client';
 import { useAppState } from '../hooks/useAppState';
+import { friendlyError } from '../utils/errorMessages';
 
 const Ctx = createContext(null);
 
@@ -128,7 +129,7 @@ export function StoreProvider({ children }) {
   /** Runs a save in the background. Failures are reported in sync.error, the screen keeps the change. */
   const save = useCallback((fn) => {
     if (!onlineRef.current) return Promise.resolve(null);
-    return fn().catch((err) => { setSync((s) => ({ ...s, error: err.message })); return null; });
+    return fn().catch((err) => { setSync((s) => ({ ...s, error: friendlyError(err, 'save') })); return null; });
   }, []);
 
   /* ---------------- the copy saved on the device ---------------- */
